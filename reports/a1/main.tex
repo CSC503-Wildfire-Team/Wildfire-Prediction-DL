@@ -1,0 +1,83 @@
+
+\newcommand\R{\mathbb{R}}
+\newcommand\N{\mathbb{N}}
+
+
+\documentclass[sigconf]{acmart}
+% Cleaning
+\pagestyle{fancy} % removes running headers
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
+\pagestyle{plain} % removes running headers
+\fancyhead{}
+\settopmatter{printacmref=false, printfolios=false}
+% Copyright
+\setcopyright{none}
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\acmDOI{}
+
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\topsep}{0pt}
+\setlength{\partopsep}{0pt}
+\usepackage{mdwlist}
+\usepackage{amsmath}
+
+\begin{document}
+\title{Deep Learning-Based Wildfire Risk Prediction}
+\author{Sebastian Brubaker}
+\affiliation{\institution{University of Victoria}}
+\email{sebastian.brubaker@gmail.com}
+
+\author{Armaan Binpal}
+\affiliation{\institution{University of Victoria}}
+\email{armaanbinpal1@gmail.com}
+
+\author{James Kim}
+\affiliation{\institution{University of Victoria}}
+\email{jknhjk03@uvic.ca}
+
+\author{Bowen Zhang}
+\affiliation{\institution{University of Victoria}}
+\email{7pixels.v@gmail.com}
+
+\begin{abstract}
+This project studies deep learning approaches for the prediction of wildfire risk. Although this is a well-researched area, there are still open questions about how these models use different data sources and how well they work across different geographic regions. We will begin with the larger wildfire prediction problem and refine our specific research question through related work, with current interest in fire area prediction, multi-modal data, and locational transferability. The codebase is available at https://github.com/CSC503-Wildfire-Team.
+\end{abstract}
+
+\keywords{Wildfire; Risk prediction; Remote Sensing; Earth Observation; Deep Learning}
+\maketitle
+
+\section{Introduction}
+
+Wildfire behavior is shaped by complex interactions among environmental, meteorological, temporal and spatial factors. Satellite observations and other environmental data provide useful information about these factors and create opportunities for deep learning methods to support wildfire prediction.
+
+Deep learning has already been widely studied for this problem~\cite{XU2025632}, but there are still open questions about how different sources of data should be used and how well models can generalize across different locations. In this project, we focus on the broader problem of deep learning-based wildfire risk prediction. Our current areas of interest include predicting future fire areas, combining multiple types of data, and studying geographical transferability. The specific research question will be refined through a further review of the related work.
+
+
+\section{Motivation}
+Wildfires pose significant threats to human populations, urban developments, ecosystems, and wildlife, while simultaneously emitting massive quantities of atmospheric pollutants~\cite{XU2025632}. Accurate wildfire risk prediction is therefore essential for mitigating these catastrophic impacts. Furthermore, given the highly complex and interdisciplinary nature of this domain, advances in existing predictive frameworks and the development of novel methodologies will inherently drive innovation across numerous adjacent scientific disciplines \cite{FAIRMAN2025104175}. 
+
+While several methodologies exist, deep learning-based approaches have proven particularly effective \cite{XU2025632}. However, the problem is by no means "solved," with researches identifying numerous future research directions, not limited to: the use of novel data; multi-modal approaches, explainable AI and uncertainty quantification, domain knowledge integration, computational efficiency, and spatial generalizability \cite{XU2025632}.     
+
+\subsection{Motivating Example}
+Consider a wildfire whose spatial extent is observed at a given time. Earth observation data from sensors such as Sentinel-1 and Sentinel-2, together with meteorological and reanalysis data such as ERA5, provide information about the environmental conditions. These observations may be used to predict the wildfire's future spatial extent, thereby allowing emergency responders and wildfire monitoring organizations to obtain information about areas likely to be affected before those areas are reached by the fire \cite{XU2025632}.
+
+\section{Problem Definition}
+\textbf{Wildfire Spread Forecasting:} Given a geo-referenced tensor of environmental observations $\mathbf{X} \in \mathbb{R}^{T \times C \times H \times W}$ and corresponding observed wildfire states $\mathbf{F} \in \mathbb{R}^{T \times A \times H \times W}$, where $T$ is the number of observed time steps, $C$ is the number of environmental data channels, $A$ is the number of wildfire attributes, and $H$ and $W$ are the spatial dimensions, the task is to learn a useful mapping function $\displaystyle{f:(\mathbf{X_{t}},\mathbf{F}_{t}) \rightarrow \mathbf{F}_{t+k}}$ such that the future wildfire state $\mathbf{F}_{t+k}$ can be predicted from observations available up to time $t$, where $k>0$ is the forecast horizon.
+
+\subsection{Running Example}
+For example, given observations over a region available at a given time, $\mathbf{X}_t$, along with the observed wildfire states, $\mathbf{F}_{0:t}$, the risk posed by that wildfire may be predicted in the fashion: $\displaystyle{f(\mathbf{X}_{t},\mathbf{F}_{0:t}) = \mathbf{F}_{t+k}}$. The predicted state, $\mathbf{F}_{t+k}$, is a spatially explicit burn risk and may take the form of a binary mask or a probability surface. 
+
+
+\section{Team Justification}
+Our team covers every part of this problem. Sebastian brings direct experience with BC wildfire satellite data, from his earlier projects and his research work with the BC government, along with deep learning and computer vision expertise. Bowen leads the project, manages documentation and the repository, and contributes experience in data analysis and machine learning. James and Armaan have both taken Introduction to Artificial Intelligence, which gives us extra people who can build, review, and debug the models, and Armaan also helps with code design. We already know each other's strengths, since Armaan and Sebastian are friends outside of school and James has discussed Sebastian's work with him, so we can divide tasks well and raise problems early.
+
+% --- Reference Formatting Section ---
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bibliography.bib}
+
+\end{document}

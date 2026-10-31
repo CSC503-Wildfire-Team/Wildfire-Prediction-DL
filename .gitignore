@@ -1,1 +1,17 @@
-reports/a3/example
+# Reports
+reports/a1/*
+!reports/a1/*.pdf
+!reports/a1/*.tex
+!reports/a1/*.bib
+
+reports/a2/*
+!reports/a2/*.pdf
+!reports/a2/*.tex
+!reports/a2/*.bib
+
+reports/a3/*
+!reports/a3/*.pdf
+!reports/a3/*.tex
+!reports/a3/*.bib
+
+# More stuff here ...
