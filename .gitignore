@@ -13,5 +13,6 @@ reports/a3/*
 !reports/a3/*.pdf
 !reports/a3/*.tex
 !reports/a3/*.bib
+reports/a3/draft*
 
 # More stuff here ...
