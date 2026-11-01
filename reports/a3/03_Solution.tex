@@ -41,21 +41,23 @@
 
 \begin{document}
 \title{Geospatial Foundation Model Embedding-Augmented Attention-U-Net for Next-Day Wildfire Spread Prediction}
+
 \author{Sebastian Brubaker}
-\affiliation{\institution{University of Victoria}}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
 \email{sebastian.brubaker@gmail.com}
 
 \author{Armaan Binpal}
-\affiliation{\institution{University of Victoria}}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
 \email{armaanbinpal1@gmail.com}
 
 \author{James Kim}
-\affiliation{\institution{University of Victoria}}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
 \email{jknhjk03@uvic.ca}
 
 \author{Bowen Zhang}
-\affiliation{\institution{University of Victoria}}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
 \email{7pixels.v@gmail.com}
+
 
 \begin{abstract}
 We specify a geospatial foundation-model-augmented Attention U-Net for pixel-wise prediction of the next 
@@ -124,86 +126,50 @@ Note, one vector per cell loses sub-kilometre heterogeneity and may suppress min
 \subsection{Preprocessing and Channel Fusion}
 The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
 standardized, $\widetilde X_{t,c}=(X_{t,c}-\mu_c)/\sigma_c$, following \cite{almakrami}. Concatenate 
-$\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as described in equation ~\ref{eq:problem}.
+$\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as described in equation \eqref{eq:problem}.
 
-\section{Problem Definition}
-\begin{definition}
-  \textbf{Next-Day Wildfire Spread Prediction (NDWSP).} Let 
-  $\textbf{X}_t \in \mathbb{R}^{C \times H \times W}$, $t, C, H, W \in \mathbb{N}$ 
-  be a georeferenced tensor representing environmental variables--including fire states--
-  on a given day $t$, on a surface of grid cells with height $H$ and width $W$. NDWSP aims to predict 
-  the wildfire state at the following day given the observed fire state and environmental predictors. Formally,  
-  \[
-  f: \underbrace{\mathbb{R}^{C \times H \times W}}_{\text{environment state}}
-  \rightarrow
-  \underbrace{[0,1]^{H \times W}}_{\text{fire probability}},
-  \]
-  with
-  \[ 
-  f(\textbf{X}_t) = \widehat{\textbf{Y}}_{t+1},
-  \]
 
-\end{definition}
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  n/.style={draw,rounded corners,align=center,font=\scriptsize,inner sep=3pt,minimum height=6mm,text width=0.80\columnwidth},
+  s/.style={draw,rounded corners,align=center,font=\scriptsize,inner sep=3pt,minimum height=7mm,text width=0.39\columnwidth},
+  a/.style={-{Latex[length=1.5mm]},semithick},
+  node distance=2.3mm and 3mm]
+  \node[s] (x) {NDWS daily inputs\\12 channels, $64\times64$};
+  \node[s,right=of x] (ae) {Preceding-year AEF\\64-D, approx. 10-m pixels};
+  \node[n,below=of ae] (med) {Spatial assignment to NDWS cells; exact cosine medoid\\$\mathbf E_t\in\mathbb R^{64\times64\times64}$};
+  \node[n,below=of med] (cat) {Channel concatenation\\$\mathbf Z_t=[\mathbf X_t;\mathbf E_t]\in\mathbb R^{76\times64\times64}$};
+  \node[n,below=of cat] (net) {Single Attention U-Net\\encoder--decoder with gated skip connections};
+  \node[n,below=of net] (out) {Next-day fire-presence probabilities\\$\widehat{\mathbf Y}_{t+1}\in[0,1]^{64\times64}$};
+  \draw[a] (x.south) |- (cat.west);
+  \draw[a] (ae.south)--(med.north);
+  \draw[a] (med.south)--(cat.north);
+  \draw[a] (cat.south)--(net.north);
+  \draw[a] (net.south)--(out.north);
+\end{tikzpicture}
+\caption{Feature construction and single-stream prediction.}
+\label{fig:pipeline}
+\end{figure}
 
-\section{Proposed Approach}\label{approach}
-  We propose an embedding-augmented Attention U-Net for pixel-wise next-day wildfire spread prediction ([MODEL NAME]).
-  The approach consists of three stages: Data Preprocessing, Attention U-Net Architecture, Training and Inference.
 
-\subsection{Data Preprocessing}\label{topic_detection}
-- NDWS Dataset (variables and resolutions, cite)
-- AlphaEarth Embeddings (breif intuition, cite, justify the use of previous year (data leakage))
-- Medoid vector resampling algorithm (select the vector with max inner prod to other vectors as a 1kmx1km tile rep that
-  preserves the authentic AlphaEarth embedding)
-  \[
-  i^*=\arg\max_i\sum_j\bar{\mathbf v}_i^\top\bar{\mathbf v}_j
-  \]
-  ...
-  $\mathbf{E}_{t} \in \mathbb{R}^{64 \times H \times W}$,
-  obtained by resampling $10 m$ AlphaEarth embeddings to the
-  $1 km$ spatial resolution of the Next Day Wildfire Spread Dataset (NDWSD) \cite{?}.
-  ...
+% \small\begin{thebibliography}{9}
+% \setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+% \bibitem{huot}
+% F. Huot, R. L. Hu, N. Goyal, T. Sankar, M. Ihme, and Y.-F. Chen,
+% ``Next day wildfire spread: A machine learning dataset to predict wildfire spreading from remote-sensing data,''
+% \emph{IEEE Transactions on Geoscience and Remote Sensing}, vol. 60, pp. 1--13, 2022. Also available as arXiv:2112.02447.
 
-\subsection{Attention U-Net Architecture}
-- Our embeddings-augmented adaptation of architecture from \cite{U-Net}
+% \bibitem{brown}
+% C. F. Brown \emph{et al.}, ``AlphaEarth Foundations: An embedding field model for accurate and efficient global mapping from sparse label data,'' arXiv:2507.22291, 2025.
 
-  [MODEL NAME] is expressed as a function $f$, formally
-  \[
-  f_\theta: \underbrace{\mathbb{R}^{12 \times 64 \times 64}}_{\text{NDWSD}} 
-  \times 
-  \underbrace{\mathbb{R}^{64 \times 64 \times 64}}_{\text{FM Embeddings}}
-  \rightarrow
-  [0,1]^{64 \times 64},
-  \]
-  with
-  \[
-  f_\theta(\mathbf{X}_t\, \mathbf{E}_{t})
-  =
-  \widehat{\mathbf{Y}}_{t+1},
-  \]
-  where $\theta$ denotes the set of learnable parameters.
+% \bibitem{almakrami}
+% K. I. Almakrami, R. Atuah, and M. P. McGuire,
+% ``Predicting wildfire spread with Attention U-Net: A multi-feature geospatial deep learning approach,''
+% in \emph{Proc. 24th International Conference on Machine Learning and Applications (ICMLA)}, 2025, pp. 500--507, doi: 10.1109/ICMLA66185.2025.00074.
+% \end{thebibliography}
 
-\subsubsection{Training and Inference}
-- follow the Attention U-Net paper closely as we can justify methods based on their success.
-- Loss
-- Batching
-- Optimizers etc
-
-% \bibliographystyle{ACM-Reference-Format}
-% \bibliography{bibliography.bib}
-\small\begin{thebibliography}{9}
-\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
-\bibitem{huot}
-F. Huot, R. L. Hu, N. Goyal, T. Sankar, M. Ihme, and Y.-F. Chen,
-``Next day wildfire spread: A machine learning dataset to predict wildfire spreading from remote-sensing data,''
-\emph{IEEE Transactions on Geoscience and Remote Sensing}, vol. 60, pp. 1--13, 2022. Also available as arXiv:2112.02447.
-\bibitem{brown}
-C. F. Brown \emph{et al.}, ``AlphaEarth Foundations: An embedding field model for accurate and efficient global mapping from sparse label data,'' arXiv:2507.22291, 2025.
-
-\bibitem{almakrami}
-K. I. Almakrami, R. Atuah, and M. P. McGuire,
-``Predicting wildfire spread with Attention U-Net: A multi-feature geospatial deep learning approach,''
-in \emph{Proc. 24th International Conference on Machine Learning and Applications (ICMLA)}, 2025, pp. 500--507, doi: 10.1109/ICMLA66185.2025.00074.
-\end{thebibliography}
-
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bibliography}
 
 \end{document}
