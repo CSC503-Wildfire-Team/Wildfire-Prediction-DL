@@ -122,7 +122,7 @@ note that the medoid is an observed AEF vector rather than a component-wise aggr
 Note, one vector per cell loses sub-kilometre heterogeneity and may suppress minority patterns.
 
 \subsection{Preprocessing and Channel Fusion}
-The medoids $\mathbf{e}_g$ are collected to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
+The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
 standardized, $\widetilde X_{t,c}=(X_{t,c}-\mu_c)/\sigma_c$, following \cite{almakrami}. Concatenate 
 $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as described in equation ~\ref{eq:problem}.
 
@@ -182,7 +182,6 @@ $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as
   \]
   where $\theta$ denotes the set of learnable parameters.
 
-
 \subsubsection{Training and Inference}
 - follow the Attention U-Net paper closely as we can justify methods based on their success.
 - Loss
@@ -197,10 +196,8 @@ $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as
 F. Huot, R. L. Hu, N. Goyal, T. Sankar, M. Ihme, and Y.-F. Chen,
 ``Next day wildfire spread: A machine learning dataset to predict wildfire spreading from remote-sensing data,''
 \emph{IEEE Transactions on Geoscience and Remote Sensing}, vol. 60, pp. 1--13, 2022. Also available as arXiv:2112.02447.
-
 \bibitem{brown}
 C. F. Brown \emph{et al.}, ``AlphaEarth Foundations: An embedding field model for accurate and efficient global mapping from sparse label data,'' arXiv:2507.22291, 2025.
-
 
 \bibitem{almakrami}
 K. I. Almakrami, R. Atuah, and M. P. McGuire,
