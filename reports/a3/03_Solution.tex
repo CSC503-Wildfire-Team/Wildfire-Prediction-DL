@@ -114,7 +114,7 @@ For each 1-km NDWS cell $g$, let $V_g=\{\mathbf{v}_{g,1},\ldots,\mathbf{v}_{g,n_
 vectors spatially assigned to that cell after geospatial alignment ($|V_g| \approx 10,000$). Normalize each vector, 
 $\bar{\mathbf{v}}_{g,i}=\mathbf{v}_{g,i}/\|\mathbf{v}_{g,i}\|_2$, and select the exact cosine medoid as:
 \begin{equation}
- i_g^*=\arg\max_{i\in\{1,\ldots,n_g\}}
+ i_g^* = \underset{{i\in\{1,\ldots,n_g\}}}{\text{argmax}}
  \sum_{j=1}^{n_g}\bar{\mathbf{v}}_{g,i}^{\top}\bar{\mathbf{v}}_{g,j},\qquad
  \mathbf{e}_g = \bar{\mathbf{v}}_{g,i_g^*}.
  \label{eq:medoid}
@@ -127,7 +127,6 @@ Note, one vector per cell loses sub-kilometre heterogeneity and may suppress min
 The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
 standardized, $\widetilde X_{t,c}=(X_{t,c}-\mu_c)/\sigma_c$, following \cite{almakrami}. Concatenate 
 $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as described in equation \eqref{eq:problem}.
-
 
 \begin{figure}[t]
 \centering
@@ -152,22 +151,74 @@ $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as
 \label{fig:pipeline}
 \end{figure}
 
+\subsection{Attention U-Net}
+Adapting the wildfire Attention U-Net proposed by Almakrami et al. \cite{almakrami}, the input layer is modified to receive 76
+channels while the remaining architecture is left unchanged. Four encoder levels each use double convolutions, consisting of
+$3 \times 3$ convolutions, batch normalizations, and ReLUs, followed by $2\times2$ max pooling; a two-convolution, 1024-filter
+bridge captures coarse context. The decoder upsamples and fuses attention-gated skip connections.
 
-% \small\begin{thebibliography}{9}
-% \setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
-% \bibitem{huot}
-% F. Huot, R. L. Hu, N. Goyal, T. Sankar, M. Ihme, and Y.-F. Chen,
-% ``Next day wildfire spread: A machine learning dataset to predict wildfire spreading from remote-sensing data,''
-% \emph{IEEE Transactions on Geoscience and Remote Sensing}, vol. 60, pp. 1--13, 2022. Also available as arXiv:2112.02447.
+The feature map at level $l$ of the encoding path is given by:
+\begin{equation}
+\mathbf{C}^{enc}_{l} = \operatorname{ReLU}\left(
+  \operatorname{BN}\left(
+    \mathbf{W}_{l2}^{enc} * \operatorname{ReLU}\left(
+      \operatorname{BN}\left(
+        \mathbf{W}_{l1}^{enc} * \mathbf{F}^{enc}_{l-1}
+      \right)
+    \right)
+  \right)
+\right)
+\label{eq:doubleconv}
+\end{equation}
+\begin{equation}
+\mathbf{F}^{enc}_{l} =
+\operatorname{MaxPool}_{2 \times 2}
+\left(\mathbf{C}^{enc}_{l}\right)
+\label{eq:maxpool}
+\end{equation}
+where $*$ denotes convolution, $\operatorname{BN}$ denotes batch normalization, and $\operatorname{ReLU}$ denotes the rectified linear unit activation.
 
-% \bibitem{brown}
-% C. F. Brown \emph{et al.}, ``AlphaEarth Foundations: An embedding field model for accurate and efficient global mapping from sparse label data,'' arXiv:2507.22291, 2025.
+At each decoder level $l$, an additive attention gate filters the corresponding encoder feature map using the preceding decoder feature map as a gating signal. The attention coefficients are computed as:
+\begin{equation}
+\boldsymbol{\alpha}_{l} =
+\sigma\left(
+\mathbf{W}_{l}^{T} *
+\operatorname{ReLU}\left(
+  \mathbf{W}_{g,l} * \mathbf{F}^{dec}_{l+1}
+  +
+  \mathbf{W}_{x,l} * \mathbf{C}^{enc}_{l}
+  +
+  \mathbf{b}_{l}
+\right)
+\right)
+\label{eq:attention}
+\end{equation}
+where $\mathbf{W}_{g,l}$ and $\mathbf{W}_{x,l}$ are learnable convolutional transformations, $\mathbf{W}_{l}^{T}$ projects the combined representation to a single-channel attention score, $\mathbf{b}_{l}$ is a learnable bias, and $\sigma$ denotes the sigmoid function. The gated encoder features are then obtained by:
+\begin{equation}
+\hat{\mathbf{F}}^{enc}_{l} =
+\boldsymbol{\alpha}_{l} \odot \mathbf{C}^{enc}_{l}
+\label{eq:gatedfeatures}
+\end{equation}
+where $\odot$ denotes element-wise multiplication.
 
-% \bibitem{almakrami}
-% K. I. Almakrami, R. Atuah, and M. P. McGuire,
-% ``Predicting wildfire spread with Attention U-Net: A multi-feature geospatial deep learning approach,''
-% in \emph{Proc. 24th International Conference on Machine Learning and Applications (ICMLA)}, 2025, pp. 500--507, doi: 10.1109/ICMLA66185.2025.00074.
-% \end{thebibliography}
+The gated features are concatenated with the upsampled decoder features, and passed through a double-convolution block:
+\begin{equation}
+\mathbf{F}^{dec}_{l} =
+\operatorname{ReLU}\left(
+  \operatorname{BN}\left(
+    \mathbf{W}_{l2}^{dec} * \operatorname{ReLU}\left(
+      \operatorname{BN}\left(
+        \mathbf{W}_{l1}^{dec} *
+          \hat{\mathbf{F}}^{enc}_{l}
+          \Vert_C
+          \operatorname{UpConv}_{2 \times 2}
+          (\mathbf{F}^{dec}_{l+1})
+      \right)
+    \right)
+  \right)
+\right)
+\label{eq:decoding}
+\end{equation}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}
