@@ -15,4 +15,19 @@ reports/a3/*
 !reports/a3/*.bib
 reports/a3/draft*
 
-# More stuff here ...
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test cache
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
