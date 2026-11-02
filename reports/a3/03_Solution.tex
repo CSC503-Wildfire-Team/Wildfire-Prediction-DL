@@ -17,6 +17,7 @@
 % \setcopyright{cagovmixed}
 \settopmatter{printacmref=false} % Removes citation information below abstract
 \acmDOI{}
+\acmConference[CSC503/SENG474]{CSC503 \texttimes{} SENG474: Data Mining}{Fall 2026}{University of Victoria}
 
 \usepackage{booktabs} % For formal tables
 \usepackage{url}
@@ -24,9 +25,7 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit}
-\algtext*{EndWhile}% Remove "end while" text
-\algtext*{EndIf}% Remove "end if" text
-%\usepackage{flexisym}
+
 
 \setlength{\parskip}{0pt}
 \setlength{\parsep}{0pt}
@@ -157,13 +156,13 @@ channels while the remaining architecture is left unchanged. Four encoder levels
 $3 \times 3$ convolutions, batch normalizations, and ReLUs, followed by $2\times2$ max pooling; a two-convolution, 1024-filter
 bridge captures coarse context. The decoder upsamples and fuses attention-gated skip connections.
 
-The feature map at level $l$ of the encoding path is given by:
+The feature map at level $l \in \{1, 2, 3, 4\}$ of the encoding path $\mathbf{F}^{enc}_{l}$ is given by:
 \begin{equation}
 \mathbf{C}^{enc}_{l} = \operatorname{ReLU}\left(
   \operatorname{BN}\left(
-    \mathbf{W}_{l2}^{enc} * \operatorname{ReLU}\left(
+    \mathbf{W}_{l,2}^{enc} * \operatorname{ReLU}\left(
       \operatorname{BN}\left(
-        \mathbf{W}_{l1}^{enc} * \mathbf{F}^{enc}_{l-1}
+        \mathbf{W}_{l,1}^{enc} * \mathbf{F}^{enc}_{l-1}
       \right)
     \right)
   \right)
@@ -176,27 +175,29 @@ The feature map at level $l$ of the encoding path is given by:
 \left(\mathbf{C}^{enc}_{l}\right)
 \label{eq:maxpool}
 \end{equation}
-where $*$ denotes convolution, $\operatorname{BN}$ denotes batch normalization, and $\operatorname{ReLU}$ denotes the rectified linear unit activation.
+where $\mathbf{C}_{l}^{enc}$ is the convolved feature map, $\mathbf{W}_{l,1}^{enc}$ and $\mathbf{W}_{l,2}^{enc}$ are learnable parameters, 
+and $*$ denotes convolution, $\operatorname{BN}$ denotes batch normalization, $\operatorname{ReLU}$ denotes the rectified linear 
+unit activation.
 
-At each decoder level $l$, an additive attention gate filters the corresponding encoder feature map using the preceding decoder feature map as a gating signal. The attention coefficients are computed as:
+At each corresponding decoder level $l$, an additive attention gate filters the corresponding encoder feature map using the preceding decoder feature map as a gating signal. The attention coefficients are computed as:
 \begin{equation}
-\boldsymbol{\alpha}_{l} =
+\mathbf{A}_{l} =
 \sigma\left(
-\mathbf{W}_{l}^{T} *
+\mathbf{W}_{l,3}^{\top [att]} *
 \operatorname{ReLU}\left(
-  \mathbf{W}_{g,l} * \mathbf{F}^{dec}_{l+1}
+  \mathbf{W}_{l,2}^{att} * \mathbf{F}^{dec}_{l+1}
   +
-  \mathbf{W}_{x,l} * \mathbf{C}^{enc}_{l}
+  \mathbf{W}_{l,1}^{att} * \mathbf{C}^{enc}_{l}
   +
   \mathbf{b}_{l}
 \right)
 \right)
 \label{eq:attention}
 \end{equation}
-where $\mathbf{W}_{g,l}$ and $\mathbf{W}_{x,l}$ are learnable convolutional transformations, $\mathbf{W}_{l}^{T}$ projects the combined representation to a single-channel attention score, $\mathbf{b}_{l}$ is a learnable bias, and $\sigma$ denotes the sigmoid function. The gated encoder features are then obtained by:
+where $\mathbf{W}_{l,1}^{att}$ and $\mathbf{W}_{l,2}^{att}$ are learnable parameters, $\mathbf{W}_{l,3}^{\top [att]}$ projects the combined representation to a single-channel attention score, $\mathbf{b}_{l}$ is a learnable bias, and $\sigma$ denotes the sigmoid function. The gated encoder features are then obtained by:
 \begin{equation}
 \hat{\mathbf{F}}^{enc}_{l} =
-\boldsymbol{\alpha}_{l} \odot \mathbf{C}^{enc}_{l}
+\mathbf{A}_{l} \odot \mathbf{C}^{enc}_{l}
 \label{eq:gatedfeatures}
 \end{equation}
 where $\odot$ denotes element-wise multiplication.
@@ -206,9 +207,9 @@ The gated features are concatenated with the upsampled decoder features, and pas
 \mathbf{F}^{dec}_{l} =
 \operatorname{ReLU}\left(
   \operatorname{BN}\left(
-    \mathbf{W}_{l2}^{dec} * \operatorname{ReLU}\left(
+    \mathbf{W}_{l,2}^{dec} * \operatorname{ReLU}\left(
       \operatorname{BN}\left(
-        \mathbf{W}_{l1}^{dec} *
+        \mathbf{W}_{l,1}^{dec} *
           \hat{\mathbf{F}}^{enc}_{l}
           \Vert_C
           \operatorname{UpConv}_{2 \times 2}
@@ -219,6 +220,16 @@ The gated features are concatenated with the upsampled decoder features, and pas
 \right)
 \label{eq:decoding}
 \end{equation}
+
+Finally, the output is given by
+\begin{equation}
+\hat{\mathbf{Y}} =
+\sigma\left(
+\mathbf{W}^{out}_1 * \mathbf{F}^{dec}_{1}
+\right)
+\label{eq:prediction}
+\end{equation}
+where $\mathbf{W}^{out}_1$ is a learnable parameter and $*$ is a $1 \times 1$ convolution. 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}
