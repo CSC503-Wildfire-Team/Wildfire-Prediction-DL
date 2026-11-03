@@ -20,4 +20,13 @@ __all__ = [
     "HybridBCEDiceLoss",
     "segmentation_metrics",
     "set_seed",
+    "EpochRecord",
+    "FitResult",
+    "fit",
 ]
+
+from .fit import (
+    EpochRecord,
+    FitResult,
+    fit,
+)
