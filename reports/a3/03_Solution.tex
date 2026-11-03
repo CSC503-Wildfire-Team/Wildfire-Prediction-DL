@@ -105,6 +105,10 @@ where $H$ and $W$ are the sample-specific height and width (with $304\leq H\leq3
 along the channel axis, and $\theta$ denotes the set of tuneable parameters and the 104 input channels comprise the 40 preprocessed 
 WildfireSpreadTS channels and 64 AEF embedding channels.
 
+\section{Proposed Method}
+We propose augmenting the WildfireSpreadTS feature stack with AEF embeddings, yielding a predictor suitable for a spatially attentive 
+U-Net architecture, specifically we adapt the Attention U-Net proposed by Almakrami et al. \cite{almakrami}.
+
 \subsection{Preprocessing and Channel Fusion}
 The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
 standardized, $\widetilde X_{t,c}=(X_{t,c}-\mu_c)/\sigma_c$, following \cite{almakrami}. Concatenate 
