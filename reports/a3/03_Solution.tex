@@ -72,17 +72,13 @@ Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-
 
 \section{Introduction}
 The WildfireSpreadTS is a multi-modal, remote-sensing dataset comprising 13,607 
-daily images across 607 wildfire events in the western United States from 2018 to 2021 \cite{gerard2023wildfirespreadts}. Each 
-georeferenced image is aligned to the 375-m VIIRS active-fire grid. Because the image footprints vary by event, the spatial dimensions are not 
-fixed and range from $304\times207$ to $356\times308$ pixels.
+daily images across 607 wildfire events in the western United States from 2018 to 2021 \cite{gerard2023wildfirespreadts}.
 
 The 23 raw channels describe vegetation and fuel, fire state, and weather conditions, along with topography. They comprise VIIRS 
 surface-reflectance bands M11, I2, and I1; NDVI and EVI2; total precipitation, wind speed and direction, minimum and maximum temperature, 
 specific humidity, Palmer Drought Severity Index, and energy release component; elevation, slope, and aspect; MODIS land-cover class; 
 five GFS forecast variables (total precipitation, wind speed, wind direction, mean temperature, and specific humidity); and the 
-current-day VIIRS active-fire observation. The reference preprocessing supplied with the dataset expands the land-cover class to 17 one-hot 
-channels and adds a binary active-fire-presence channel alongside the active-fire detection-time channel, yielding a 40-channel predictor 
-\cite{gerard2023wildfirespreadts}.
+current-day VIIRS active-fire observation. Preprocessing expands the dataset to a 40-channel predictor \cite{gerard2023wildfirespreadts}.
 
 AlphaEarth Foundations (AEF) learns general-purpose geospatial representations from multiple 
 Earth-observation sources and releases annual 64-dimensional embedding layers at approximately 10-m spatial resolution \cite{brown}. 
@@ -105,14 +101,35 @@ where $H$ and $W$ are the sample-specific height and width (with $304\leq H\leq3
 along the channel axis, and $\theta$ denotes the set of tuneable parameters and the 104 input channels comprise the 40 preprocessed 
 WildfireSpreadTS channels and 64 AEF embedding channels.
 
+
 \section{Proposed Method}
 We propose augmenting the WildfireSpreadTS feature stack with AEF embeddings, yielding a predictor suitable for a spatially attentive 
-U-Net architecture, specifically we adapt the Attention U-Net proposed by Almakrami et al. \cite{almakrami}.
+U-Net architecture, specifically, we adapt the Attention U-Net proposed by Almakrami et al. \cite{almakrami}.
+
+\subsection{Temporal and Spatial Embedding Alignment}
+AEF provides annual embeddings beginning in 2017 \cite{brown}. For an event in calendar year $y$, the annual layer indexed $y-1$ is 
+used to prevent data leakage. Since WildfireSpreadTS contains events from 2018--2021, the preceding-year layers 2017--2020 are available for 
+all four dataset years.
+
+For each 375-m WildfireSpreadTS cell $g$, let $V_g=\{\mathbf{v}_{g,1},\ldots,\mathbf{v}_{g,n_g}\}$ be the valid 64-D AEF pixel 
+vectors spatially assigned to that cell after geospatial alignment. Normalize each vector, 
+$\bar{\mathbf{v}}_{g,i}=\mathbf{v}_{g,i}/\|\mathbf{v}_{g,i}\|_2$, and select the exact cosine medoid as:
+
+\begin{equation}
+ i_g^* = \underset{{i\in\{1,\ldots,n_g\}}}{\text{argmax}}
+ \sum_{j=1}^{n_g}\bar{\mathbf{v}}_{g,i}^{\top}\bar{\mathbf{v}}_{g,j},\qquad
+ \mathbf{e}_g = \bar{\mathbf{v}}_{g,i_g^*}.
+ \label{eq:medoid}
+\end{equation}
+
+Note, while the medoid is an observed AEF vector rather than a component-wise aggregate, representing each 375-m cell with one vector 
+nevertheless loses sub-pixel heterogeneity and may suppress minority patterns.
 
 \subsection{Preprocessing and Channel Fusion}
-The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
-standardized, $\widetilde X_{t,c}=(X_{t,c}-\mu_c)/\sigma_c$, following \cite{almakrami}. Concatenate 
-$\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as described in equation \eqref{eq:problem}.
+The medoids are composed to form $\mathbf E_t$ on the WildfireSpreadTS 375-m grid. Continuous predictor channels are standardized while 
+categorical land-cover and active-fire channels retain their encoded representations. $\mathbf Z_t\in\mathbb{R}^{104\times H\times W}$ is then 
+obtained by equation \eqref{eq:problem}. Since image dimensions vary between events, samples are cropped or padded to a common spatial size 
+compatible with mini-batch training, subsequently, padded pixels are excluded from the loss.
 
 \begin{figure}[t]
 \centering
@@ -121,26 +138,26 @@ $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as
   s/.style={draw,rounded corners,align=center,font=\scriptsize,inner sep=3pt,minimum height=7mm,text width=0.39\columnwidth},
   a/.style={-{Latex[length=1.5mm]},semithick},
   node distance=2.3mm and 3mm]
-  \node[s] (x) {NDWS daily inputs\\12 channels, $64\times64$};
+  \node[s] (x) {WildfireSpreadTS daily inputs\\40 preprocessed channels, $H\times W$};
   \node[s,right=of x] (ae) {Preceding-year AEF\\64-D, approx. 10-m pixels};
-  \node[n,below=of ae] (med) {Spatial assignment to NDWS cells; exact cosine medoid\\$\mathbf E_t\in\mathbb R^{64\times64\times64}$};
-  \node[n,below=of med] (cat) {Channel concatenation\\$\mathbf Z_t=[\mathbf X_t;\mathbf E_t]\in\mathbb R^{76\times64\times64}$};
+  \node[n,below=of ae] (med) {Spatial assignment to 375-m cells; exact cosine medoid\\$\mathbf E_t\in\mathbb R^{64\times H\times W}$};
+  \node[n,below=of med] (cat) {Channel concatenation\\$\mathbf Z_t=[\widetilde{\mathbf X}_t;\mathbf E_t]\in\mathbb R^{104\times H\times W}$};
   \node[n,below=of cat] (net) {Single Attention U-Net\\encoder--decoder with gated skip connections};
-  \node[n,below=of net] (out) {Next-day fire-presence probabilities\\$\widehat{\mathbf Y}_{t+1}\in[0,1]^{64\times64}$};
+  \node[n,below=of net] (out) {Next-day fire-presence probabilities\\$\widehat{\mathbf Y}_{t+1}\in[0,1]^{H\times W}$};
   \draw[a] (x.south) |- (cat.west);
   \draw[a] (ae.south)--(med.north);
   \draw[a] (med.south)--(cat.north);
   \draw[a] (cat.south)--(net.north);
   \draw[a] (net.south)--(out.north);
 \end{tikzpicture}
-\caption{Feature construction and single-stream prediction.}
+\caption{Single-time-step feature construction and direct spatial prediction.}
 \label{fig:pipeline}
 \end{figure}
 
 \subsection{Attention U-Net}
 Adapting the wildfire Attention U-Net proposed by Almakrami et al.
-\cite{almakrami}, the input layer is modified to receive 76
-channels while the remaining architecture is left unchanged.
+\cite{almakrami}, the input layer is modified to receive 104
+channels (40 preprocessed WildfireSpreadTS channels and 64 AEF channels) while the remaining architecture is left unchanged.
 Four encoder levels each use double convolutions, consisting of
 $3 \times 3$ convolutions, batch normalizations, and ReLUs,
 followed by $2\times2$ max pooling. A two-convolution,
@@ -274,11 +291,10 @@ the next-day fire probability map:
 \end{equation}
 
 \subsection{Training and Inference}
-Due to heavy class imbalance and, a hybrid loss function composed of a weighted sum of BCE $\mathcal{L}_{\mathrm{BCE}}$ and Dice loss 
-$\mathcal{L}_{\mathrm{Dice}}$ is used. Training is performed using the Adam optimizer ($lr = 10^{-4}$) and stochastic gradient descent 
-(SGD) (batch size 32), with validation-IoU checkpointing/early stopping \cite{almakrami}. A $70/20/10\%$ train, validation, test, split 
-is used. $\theta$ is updated per mini-batch by minimizing the combined loss $\mathcal{L}$, and the checkpoint with the best validation 
-IoU is retained. Masked loss is used in the case of invalid pixels.
+Due to the severe class imbalance inherent to wildfire spread prediction datasets \cite{gerard2023wildfirespreadts}, a hybrid loss function 
+composed of a weighted sum of BCE 
+$\mathcal{L}_{\mathrm{BCE}}$ and Dice loss 
+$\mathcal{L}_{\mathrm{Dice}}$ is used \cite{almakrami}. 
 \begin{align}
  \mathcal{L}_{\mathrm{BCE}}&=-\frac{1}{|\Omega|}\sum_{p\in\Omega}\left[Y_p\log\hat Y_p+(1-Y_p)\log(1-\hat Y_p)\right],\\[-1mm]
  \mathcal{L}_{\mathrm{Dice}}&=1-\frac{2\sum_{p\in\Omega}Y_p\hat Y_p+\epsilon}{\sum_{p\in\Omega}Y_p+\sum_{p\in\Omega}\hat Y_p+\epsilon},\\[-1mm]
@@ -289,17 +305,20 @@ where $\Omega$ is the set of valid pixels and $\epsilon$ is a constant for numer
 while Dice rewards region overlap. At inference time a binary mask may be computed as 
 $\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\tau \in [0,1]$.
 
+\textit{Training configuations and hyperparameters, and data splits are detailed in Milestone 4: Evaluation.} 
+
 \begin{algorithm}[t]
 \caption{Embedding-augmented prediction}
 \small
 \begin{algorithmic}[1]
-\Require NDWS input $\mathbf X_t$, date $t$, AEF annual layers, fitted $\mu,\sigma$
+\Require WildfireSpreadTS input $\mathbf X_t^{raw}$ for day $t$, date $t$, AEF annual layers, training-set normalization statistics
 \Ensure Probability map $\widehat{\mathbf Y}_{t+1}$
 \State Load preceding-year layer $\mathbf A_{\operatorname{year}(t)-1}$
-\ForAll{1-km cells $g$}
-  \State Collect valid vectors $V_g$; select medoid by Eq.~\ref{eq:medoid}
+\ForAll{375-m cells $g$}
+  \State Collect valid AEF vectors $V_g$ within each 375-m cell; select medoid by Eq.~\ref{eq:medoid}
 \EndFor
-\State Assemble $\mathbf E_t$; standardize $\mathbf X_t$; concatenate to $\mathbf Z_t$
+\State Apply the 40-channel WildfireSpreadTS preprocessing to $\mathbf X_t^{raw}$; standardize continuous channels using training statistics
+\State Assemble $\mathbf E_t$; concatenate with the preprocessed input to form $\mathbf Z_t\in\mathbb R^{104\times H\times W}$
 \State \Return $f_\theta(\mathbf Z_t)$
 \end{algorithmic}
 \end{algorithm}
