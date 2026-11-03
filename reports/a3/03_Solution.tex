@@ -151,12 +151,18 @@ $\widetilde{\mathbf X}_t$ with the 64 medoid channels to obtain $\mathbf Z_t$ as
 \end{figure}
 
 \subsection{Attention U-Net}
-Adapting the wildfire Attention U-Net proposed by Almakrami et al. \cite{almakrami}, the input layer is modified to receive 76
-channels while the remaining architecture is left unchanged. Four encoder levels each use double convolutions, consisting of
-$3 \times 3$ convolutions, batch normalizations, and ReLUs, followed by $2\times2$ max pooling; a two-convolution, 1024-filter
-bridge captures coarse context. The decoder upsamples and fuses attention-gated skip connections.
+Adapting the wildfire Attention U-Net proposed by Almakrami et al.
+\cite{almakrami}, the input layer is modified to receive 76
+channels while the remaining architecture is left unchanged.
+Four encoder levels each use double convolutions, consisting of
+$3 \times 3$ convolutions, batch normalizations, and ReLUs,
+followed by $2\times2$ max pooling. A two-convolution,
+1024-filter bridge connects the encoder and decoder.
 
-The feature map at level $l \in \{1, 2, 3, 4\}$ of the encoding path $\mathbf{F}^{enc}_{l}$ is given by:
+The encoder is initialized with $\mathbf{F}^{enc}_0=\mathbf{Z}_t$.
+At each level $l\in\{1,2,3,4\}$, the convolved feature map
+and subsequent pooled representation are given by:
+
 \begin{equation}
 \mathbf{C}^{enc}_{l} = \operatorname{ReLU}\left(
   \operatorname{BN}\left(
@@ -169,23 +175,56 @@ The feature map at level $l \in \{1, 2, 3, 4\}$ of the encoding path $\mathbf{F}
 \right)
 \label{eq:doubleconv}
 \end{equation}
+
 \begin{equation}
 \mathbf{F}^{enc}_{l} =
 \operatorname{MaxPool}_{2 \times 2}
 \left(\mathbf{C}^{enc}_{l}\right)
 \label{eq:maxpool}
 \end{equation}
-where $\mathbf{C}_{l}^{enc}$ is the convolved feature map, $\mathbf{W}_{l,1}^{enc}$ and $\mathbf{W}_{l,2}^{enc}$ are learnable parameters, 
-and $*$ denotes convolution, $\operatorname{BN}$ denotes batch normalization, $\operatorname{ReLU}$ denotes the rectified linear 
-unit activation.
 
-At each corresponding decoder level $l$, an additive attention gate filters the corresponding encoder feature map using the preceding decoder feature map as a gating signal. The attention coefficients are computed as:
+where $\mathbf{W}_{l,1}^{enc}$ and $\mathbf{W}_{l,2}^{enc}$ are
+learnable convolutional parameters, $*$ denotes convolution,
+$\operatorname{BN}$ denotes batch normalization, and
+$\operatorname{ReLU}$ denotes the rectified linear unit.
+
+The bridge applies the same double-convolution operation to
+the final pooled encoder representation:
+
+\begin{equation}
+\mathbf{F}^{dec}_{5} =
+\operatorname{ReLU}\left(
+  \operatorname{BN}\left(
+    \mathbf{W}_{5,2}^{dec} * \operatorname{ReLU}\left(
+      \operatorname{BN}\left(
+        \mathbf{W}_{5,1}^{dec} * \mathbf{F}^{enc}_{4}
+      \right)
+    \right)
+  \right)
+\right)
+\label{eq:bridge}
+\end{equation}
+
+At each corresponding decoder level $l\in\{4,3,2,1\}$,
+the preceding decoder representation is upsampled:
+
+\begin{equation}
+\mathbf{U}_{l} =
+\operatorname{UpConv}_{2 \times 2}
+\left(\mathbf{F}^{dec}_{l+1}\right)
+\label{eq:upconv}
+\end{equation}
+
+An additive attention gate then computes spatial attention
+coefficients from the upsampled decoder features and
+corresponding encoder features:
+
 \begin{equation}
 \mathbf{A}_{l} =
 \sigma\left(
-\mathbf{W}_{l,3}^{\top [att]} *
+\mathbf{W}_{l,3}^{att} *
 \operatorname{ReLU}\left(
-  \mathbf{W}_{l,2}^{att} * \mathbf{F}^{dec}_{l+1}
+  \mathbf{W}_{l,2}^{att} * \mathbf{U}_{l}
   +
   \mathbf{W}_{l,1}^{att} * \mathbf{C}^{enc}_{l}
   +
@@ -194,15 +233,29 @@ At each corresponding decoder level $l$, an additive attention gate filters the 
 \right)
 \label{eq:attention}
 \end{equation}
-where $\mathbf{W}_{l,1}^{att}$ and $\mathbf{W}_{l,2}^{att}$ are learnable parameters, $\mathbf{W}_{l,3}^{\top [att]}$ projects the combined representation to a single-channel attention score, $\mathbf{b}_{l}$ is a learnable bias, and $\sigma$ denotes the sigmoid function. The gated encoder features are then obtained by:
+
+where $\mathbf{W}_{l,1}^{att}$ and $\mathbf{W}_{l,2}^{att}$
+are learnable convolutional transformations that project
+the encoder and decoder features into a common feature space.
+$\mathbf{W}_{l,3}^{att}$ projects the combined representation
+to a single-channel attention score, $\mathbf{b}_{l}$ is a
+learnable bias, and $\sigma$ denotes the sigmoid function.
+The resulting coefficients $\mathbf{A}_{l}$ are applied
+element-wise to the encoder features:
+
 \begin{equation}
 \hat{\mathbf{F}}^{enc}_{l} =
 \mathbf{A}_{l} \odot \mathbf{C}^{enc}_{l}
 \label{eq:gatedfeatures}
 \end{equation}
-where $\odot$ denotes element-wise multiplication.
 
-The gated features are concatenated with the upsampled decoder features, and passed through a double-convolution block:
+where $\odot$ denotes element-wise multiplication, with the
+single-channel attention coefficients broadcast across the
+encoder feature channels.
+
+The gated encoder features are concatenated with the upsampled
+decoder features and passed through a double-convolution block:
+
 \begin{equation}
 \mathbf{F}^{dec}_{l} =
 \operatorname{ReLU}\left(
@@ -210,10 +263,11 @@ The gated features are concatenated with the upsampled decoder features, and pas
     \mathbf{W}_{l,2}^{dec} * \operatorname{ReLU}\left(
       \operatorname{BN}\left(
         \mathbf{W}_{l,1}^{dec} *
+        \left[
           \hat{\mathbf{F}}^{enc}_{l}
           \Vert_C
-          \operatorname{UpConv}_{2 \times 2}
-          (\mathbf{F}^{dec}_{l+1})
+          \mathbf{U}_{l}
+        \right]
       \right)
     \right)
   \right)
@@ -221,15 +275,47 @@ The gated features are concatenated with the upsampled decoder features, and pas
 \label{eq:decoding}
 \end{equation}
 
-Finally, the output is given by
+Finally, a $1\times1$ convolution and sigmoid activation produce
+the next-day fire probability map:
+
 \begin{equation}
-\hat{\mathbf{Y}} =
+\widehat{\mathbf{Y}}_{t+1} =
 \sigma\left(
-\mathbf{W}^{out}_1 * \mathbf{F}^{dec}_{1}
+\mathbf{W}^{out} * \mathbf{F}^{dec}_{1}
 \right)
 \label{eq:prediction}
 \end{equation}
-where $\mathbf{W}^{out}_1$ is a learnable parameter and $*$ is a $1 \times 1$ convolution. 
+
+\subsection{Training and Inference}
+Due to heavy class imbalance and, a hybrid loss function composed of a weighted sum of BCE $\mathcal{L}_{\mathrm{BCE}}$ and Dice loss 
+$\mathcal{L}_{\mathrm{Dice}}$ is used. Training is performed using the Adam optimizer ($lr = 10^{-4}$) and stochastic gradient descent 
+(SGD) (batch size 32), with validation-IoU checkpointing/early stopping \cite{almakrami}. A $70/20/10\%$ train, validation, test, split 
+is used. $\theta$ is updated per mini-batch by minimizing the combined loss $\mathcal{L}$, and the checkpoint with the best validation 
+IoU is retained. Masked loss is used in the case of invalid pixels.
+\begin{align}
+ \mathcal{L}_{\mathrm{BCE}}&=-\frac{1}{|\Omega|}\sum_{p\in\Omega}\left[Y_p\log\hat Y_p+(1-Y_p)\log(1-\hat Y_p)\right],\\[-1mm]
+ \mathcal{L}_{\mathrm{Dice}}&=1-\frac{2\sum_{p\in\Omega}Y_p\hat Y_p+\epsilon}{\sum_{p\in\Omega}Y_p+\sum_{p\in\Omega}\hat Y_p+\epsilon},\\[-1mm]
+ \mathcal{L}&=\lambda\mathcal{L}_{\mathrm{BCE}}+(1-\lambda)\mathcal{L}_{\mathrm{Dice}}.
+ \label{eq:loss}
+\end{align}
+where $\Omega$ is the set of valid pixels and $\epsilon$ is a constant for numerical stability. Observe, BCE penalizes pixel-wise errors 
+while Dice rewards region overlap. At inference time a binary mask may be computed as 
+$\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\tau \in [0,1]$.
+
+\begin{algorithm}[t]
+\caption{Embedding-augmented prediction}
+\small
+\begin{algorithmic}[1]
+\Require NDWS input $\mathbf X_t$, date $t$, AEF annual layers, fitted $\mu,\sigma$
+\Ensure Probability map $\widehat{\mathbf Y}_{t+1}$
+\State Load preceding-year layer $\mathbf A_{\operatorname{year}(t)-1}$
+\ForAll{1-km cells $g$}
+  \State Collect valid vectors $V_g$; select medoid by Eq.~\ref{eq:medoid}
+\EndFor
+\State Assemble $\mathbf E_t$; standardize $\mathbf X_t$; concatenate to $\mathbf Z_t$
+\State \Return $f_\theta(\mathbf Z_t)$
+\end{algorithmic}
+\end{algorithm}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}

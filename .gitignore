@@ -21,4 +21,21 @@ data/
 *.tif
 *.hdf5
 __pycache__/
+
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test cache
+.pytest_cache/
+
+# Virtual environments
 .venv/
+venv/
+env/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
