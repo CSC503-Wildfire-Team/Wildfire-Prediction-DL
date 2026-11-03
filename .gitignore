@@ -16,3 +16,9 @@ reports/a3/*
 reports/a3/draft*
 
 # More stuff here ...
+
+data/
+*.tif
+*.hdf5
+__pycache__/
+.venv/
