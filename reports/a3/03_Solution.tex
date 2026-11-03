@@ -59,68 +59,51 @@
 
 
 \begin{abstract}
-We specify a geospatial foundation-model-augmented Attention U-Net for pixel-wise prediction of the next 
-day's wildfire mask. Twelve conventional channels from the Next Day Wildfire Spread dataset are concatenated with 
-spatially aggregated 64-dimensional annual AlphaEarth embeddings to the dataset's 1-km grid, yielding a 
-$76\times64\times64$ input. To retain an actual observed embedding, each 1-km cell is 
-represented by the exact cosine medoid of its valid fine-resolution embeddings. The annual embedding is selected from 
-the preceding calendar year to prevent data leakage. We describe the input-output mapping, preprocessing, 
-model architecture, and a training and inference procedure. 
+We specify a geospatial foundation-model-augmented Attention U-Net for single-time-step wildfire spread prediction. We use WildfireSpreadTS,  
+in conjunction with AlphaEarth Foundations (AEF) embeddings. The methodological contribution is a feature-fusion pipeline using an Attention 
+U-Net with spatially selective skip connections to fuse the environmental features of WildfireSpreadTS with AEF's learned annual environmental 
+representations. 
+
 Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-DL
 \end{abstract}
 
-\keywords{asdkjhf, askdjhf}
+\keywords{wildfire spread prediction, geospatial foundation models, AlphaEarth embeddings, remote sensing, semantic segmentation}
 \maketitle
 
 \section{Introduction}
-Next-day wildfire spread prediction is framed as segmentation--dense image classification: given the observed fire state and 
-environmental conditions at day $t$, estimate the fire mask at $t+1$. The Next Day Wildfire Spread (NDWS) dataset 
-represents U.S. fire events from 2012--2020 and provides daily fire masks and aligned environmental predictors 
-at a 1-km spatial resolution; each $64\times64$ patch represents a $64\,\mathrm{km}\times64\,\mathrm{km}$ region 
-\cite{huot}. The NDWS describes drivers using physical quantities, in contrast, AlphaEarth Foundations (AEF) produces 
-general-purpose geospatial representations by learning from multiple Earth-observation sources and releases annual 
-64-dimensional embedding layers at approximately 10-m spatial resolution \cite{brown}.
+The WildfireSpreadTS is a multi-modal, remote-sensing dataset comprising 13,607 
+daily images across 607 wildfire events in the western United States from 2018 to 2021 \cite{gerard2023wildfirespreadts}. Each 
+georeferenced image is aligned to the 375-m VIIRS active-fire grid. Because the image footprints vary by event, the spatial dimensions are not 
+fixed and range from $304\times207$ to $356\times308$ pixels.
 
-We propose augmenting the NDWS feature stack with AEF embeddings, yielding a wildfire predictor suitable for an 
-Attention U-Net architecture. The methodological contribution is a temporally constrained, spatially aggregated 
-feature-fusion pipeline that leverages the spatially selective skip connections of the wildfire Attention U-Net 
-proposed by Almakrami et al. \cite{almakrami} to transfer annual AEF context to the daily 1-km prediction grid of NDWS.
+The 23 raw channels describe vegetation and fuel, fire state, and weather conditions, along with topography. They comprise VIIRS 
+surface-reflectance bands M11, I2, and I1; NDVI and EVI2; total precipitation, wind speed and direction, minimum and maximum temperature, 
+specific humidity, Palmer Drought Severity Index, and energy release component; elevation, slope, and aspect; MODIS land-cover class; 
+five GFS forecast variables (total precipitation, wind speed, wind direction, mean temperature, and specific humidity); and the 
+current-day VIIRS active-fire observation. The reference preprocessing supplied with the dataset expands the land-cover class to 17 one-hot 
+channels and adds a binary active-fire-presence channel alongside the active-fire detection-time channel, yielding a 40-channel predictor 
+\cite{gerard2023wildfirespreadts}.
+
+AlphaEarth Foundations (AEF) learns general-purpose geospatial representations from multiple 
+Earth-observation sources and releases annual 64-dimensional embedding layers at approximately 10-m spatial resolution \cite{brown}. 
 
 
 \section{Problem Definition}
-For a sample at date $t$, let $\mathbf{X}_t\in\mathbb{R}^{12\times64\times64}$ be the conventional input and 
-$\mathbf{Y}_{t+1}\in\{0,1\}^{64\times64}$ the next-day fire mask. The 12 channels are 11 drivers (elevation; wind 
-direction/speed; minimum/maximum temperature; humidity; precipitation; PDSI; NDVI; population density; ERC) plus 
-the day-$t$ fire mask \cite{huot}. Let $\mathbf{E}_t\in\mathbb{R}^{64\times64\times64}$ be the AEF tensor aligned to 
-the same grid. The proposed predictor may be expressed as a function
+Next-day wildfire spread prediction is framed as a single-time-step, segmentation---dense image classification task: given the observed fire 
+state and environmental conditions and forecasts available at day $t$, estimate the active-fire mask at $t+1$. For a sample at 
+date $t$, let $\mathbf{X}_t \in \mathbb{R}^{40\times H\times W}$ denote the preprocessed 40-channel WildfireSpreadTS tensor and let 
+$\mathbf{Y}_{t+1}\in\{0,1\}^{H\times W}$ denote the binary next-day VIIRS active-fire mask.
+
+Let $\mathbf{E}_t\in\mathbb{R}^{64\times H\times W}$ be the AEF tensor aligned to the same 375-m grid. The proposed predictor is expressed as
 \begin{equation}
- f_\theta:\mathbb{R}^{76\times64\times64}\rightarrow[0,1]^{64\times64},\qquad
+ f_\theta:\mathbb{R}^{104\times H\times W}\rightarrow[0,1]^{H\times W},\qquad
  f_\theta(\mathbf{Z}_t) = \widehat{\mathbf{Y}}_{t+1},\quad
- \mathbf{Z}_t=\mathbf{X}_t\mathbin{\Vert}_{C}\mathbf{E}_t,
+ \mathbf{Z}_t = \mathbf{X}_t \mathbin{\Vert}_{C} \mathbf{E}_t,
  \label{eq:problem}
 \end{equation}
-where $\Vert_C$ denotes concatenation along the channel axis and $\theta$ denotes the set of trainable parameters.
-
-
-\section{Proposed Method}
-\subsection{Temporal and Spatial Embedding Alignment}
-AEF represents spatial and temporal context in a 64-dimensional embedding and provides annual layers beginning in 2017 
-\cite{brown}. For an event in calendar year $y$, the annual layer indexed $y-1$ is used to prevent data leakage. 
-Because the released archive begins in 2017, this preceding-year join is available for NDWS samples from 2018--2020; 
-earlier samples have no preceding layer and are therefore excluded.
-
-For each 1-km NDWS cell $g$, let $V_g=\{\mathbf{v}_{g,1},\ldots,\mathbf{v}_{g,n_g}\}$ be the valid 64-D AEF pixel 
-vectors spatially assigned to that cell after geospatial alignment ($|V_g| \approx 10,000$). Normalize each vector, 
-$\bar{\mathbf{v}}_{g,i}=\mathbf{v}_{g,i}/\|\mathbf{v}_{g,i}\|_2$, and select the exact cosine medoid as:
-\begin{equation}
- i_g^* = \underset{{i\in\{1,\ldots,n_g\}}}{\text{argmax}}
- \sum_{j=1}^{n_g}\bar{\mathbf{v}}_{g,i}^{\top}\bar{\mathbf{v}}_{g,j},\qquad
- \mathbf{e}_g = \bar{\mathbf{v}}_{g,i_g^*}.
- \label{eq:medoid}
-\end{equation}
-Observe, $L_2$ normalizing yields unit vectors, making the inner product equivelent to cosine similarity. Additionally, 
-note that the medoid is an observed AEF vector rather than a component-wise aggregate. Invalid pixels are excluded. 
-Note, one vector per cell loses sub-kilometre heterogeneity and may suppress minority patterns.
+where $H$ and $W$ are the sample-specific height and width (with $304\leq H\leq356$ and $207\leq W\leq308$), $\Vert_C$ denotes concatenation 
+along the channel axis, and $\theta$ denotes the set of tuneable parameters and the 104 input channels comprise the 40 preprocessed 
+WildfireSpreadTS channels and 64 AEF embedding channels.
 
 \subsection{Preprocessing and Channel Fusion}
 The medoids are composed to form $\mathbf E_t$ on the NDWS grid. Each NDWS feature channel is 
