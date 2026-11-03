@@ -1,0 +1,16 @@
+# Core numerical / deep-learning stack
+numpy
+pandas
+torch
+torchvision
+
+# Geospatial and dataset I/O
+rasterio
+h5py
+tqdm
+
+# AlphaEarth / Earth Engine
+earthengine-api
+
+# Testing
+pytest
