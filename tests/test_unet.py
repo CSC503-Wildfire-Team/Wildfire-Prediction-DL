@@ -1,18 +1,23 @@
 import torch
 
-from src.attention_unet.model import AttentionUNet
+from src.attention_unet.model import (
+    AttentionUNet,
+    SEBlock,
+)
 
 
 def test_attention_unet_output_shape_64():
-    # Smaller base_channels makes the test fast.
+    # Embedding-augmented configuration:
+    # 40 WSTS + 64 AEF channels.
     model = AttentionUNet(
-        n_in_channels=12,
+        n_in_channels=104,
         base_channels=8,
+        use_se=True,
     )
 
     x = torch.randn(
         2,
-        12,
+        104,
         64,
         64,
     )
@@ -32,14 +37,17 @@ def test_attention_unet_output_shape_64():
 
 
 def test_attention_unet_output_shape_128():
+    # WSTS-only baseline and original architecture
+    # without SE channel attention.
     model = AttentionUNet(
-        n_in_channels=20,
+        n_in_channels=40,
         base_channels=8,
+        use_se=False,
     )
 
     x = torch.randn(
         1,
-        20,
+        40,
         128,
         128,
     )
@@ -58,6 +66,7 @@ def test_attention_unet_backward_pass():
     model = AttentionUNet(
         n_in_channels=5,
         base_channels=8,
+        use_se=True,
     )
 
     x = torch.randn(
@@ -78,3 +87,32 @@ def test_attention_unet_backward_pass():
         for parameter in model.parameters()
         if parameter.requires_grad
     )
+
+
+def test_se_block_preserves_shape_and_backward():
+    # reduction > channels intentionally tests the
+    # small-width edge case used in lightweight tests.
+    block = SEBlock(
+        channels=8,
+        reduction=16,
+    )
+
+    x = torch.randn(
+        2,
+        8,
+        16,
+        16,
+        requires_grad=True,
+    )
+
+    y = block(x)
+
+    assert y.shape == x.shape
+
+    y.mean().backward()
+
+    assert x.grad is not None
+
+    assert torch.isfinite(
+        x.grad
+    ).all()

@@ -7,6 +7,7 @@ from .model import (
     AttentionUNet,
     DecoderBlock,
     DoubleConv,
+    SEBlock,
 )
 
 from .reproducibility import set_seed
@@ -17,6 +18,7 @@ __all__ = [
     "AttentionUNet",
     "DecoderBlock",
     "DoubleConv",
+    "SEBlock",
     "HybridBCEDiceLoss",
     "segmentation_metrics",
     "set_seed",

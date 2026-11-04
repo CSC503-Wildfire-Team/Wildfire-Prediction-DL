@@ -9,7 +9,11 @@ class DoubleConv(nn.Module):
     Two 3x3 convolutions, each followed by BatchNorm and ReLU.
     """
 
-    def __init__(self, in_channels: int, out_channels: int) -> None:
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+    ) -> None:
         super().__init__()
 
         self.block = nn.Sequential(
@@ -34,8 +38,75 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
         return self.block(x)
+
+
+class SEBlock(nn.Module):
+    """
+    Squeeze-and-Excitation block for channel-wise feature recalibration.
+    """
+
+    def __init__(
+        self,
+        channels: int,
+        reduction: int = 16,
+    ) -> None:
+        super().__init__()
+
+        if channels <= 0:
+            raise ValueError(
+                "channels must be positive"
+            )
+
+        if reduction <= 0:
+            raise ValueError(
+                "reduction must be positive"
+            )
+
+        hidden_channels = max(
+            1,
+            channels // reduction,
+        )
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+
+        self.fc = nn.Sequential(
+            nn.Linear(
+                channels,
+                hidden_channels,
+            ),
+            nn.ReLU(inplace=True),
+            nn.Linear(
+                hidden_channels,
+                channels,
+            ),
+            nn.Sigmoid(),
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
+
+        batch_size, channels, _, _ = x.shape
+
+        weights = self.pool(x).view(
+            batch_size,
+            channels,
+        )
+
+        weights = self.fc(weights).view(
+            batch_size,
+            channels,
+            1,
+            1,
+        )
+
+        return x * weights
 
 
 class AttentionGate(nn.Module):
@@ -56,7 +127,10 @@ class AttentionGate(nn.Module):
         super().__init__()
 
         if inter_channels is None:
-            inter_channels = max(skip_channels // 2, 1)
+            inter_channels = max(
+                skip_channels // 2,
+                1,
+            )
 
         # W_x F_l
         self.skip_projection = nn.Conv2d(
@@ -169,7 +243,8 @@ class DecoderBlock(nn.Module):
 
 class AttentionUNet(nn.Module):
     """
-    Four-level Attention U-Net.
+    Four-level Attention U-Net with optional
+    Squeeze-and-Excitation channel attention.
 
     Default architecture:
         Encoder:
@@ -185,7 +260,8 @@ class AttentionUNet(nn.Module):
             one-channel probability map
 
     n_in_channels is intentionally configurable because the
-    final wildfire dataset / AlphaEarth feature count may change.
+    wildfire / AlphaEarth feature count may vary between
+    baseline and embedding-augmented experiments.
     """
 
     def __init__(
@@ -194,6 +270,8 @@ class AttentionUNet(nn.Module):
         n_out_channels: int = 1,
         base_channels: int = 64,
         apply_sigmoid: bool = True,
+        use_se: bool = True,
+        se_reduction: int = 16,
     ) -> None:
         super().__init__()
 
@@ -205,6 +283,16 @@ class AttentionUNet(nn.Module):
         if n_out_channels <= 0:
             raise ValueError(
                 "n_out_channels must be positive"
+            )
+
+        if base_channels <= 0:
+            raise ValueError(
+                "base_channels must be positive"
+            )
+
+        if se_reduction <= 0:
+            raise ValueError(
+                "se_reduction must be positive"
             )
 
         c1 = base_channels
@@ -227,9 +315,27 @@ class AttentionUNet(nn.Module):
             c1,
         )
 
+        self.se1 = (
+            SEBlock(
+                c1,
+                reduction=se_reduction,
+            )
+            if use_se
+            else nn.Identity()
+        )
+
         self.enc2 = DoubleConv(
             c1,
             c2,
+        )
+
+        self.se2 = (
+            SEBlock(
+                c2,
+                reduction=se_reduction,
+            )
+            if use_se
+            else nn.Identity()
         )
 
         self.enc3 = DoubleConv(
@@ -237,9 +343,27 @@ class AttentionUNet(nn.Module):
             c3,
         )
 
+        self.se3 = (
+            SEBlock(
+                c3,
+                reduction=se_reduction,
+            )
+            if use_se
+            else nn.Identity()
+        )
+
         self.enc4 = DoubleConv(
             c3,
             c4,
+        )
+
+        self.se4 = (
+            SEBlock(
+                c4,
+                reduction=se_reduction,
+            )
+            if use_se
+            else nn.Identity()
         )
 
         # Bridge
@@ -311,19 +435,27 @@ class AttentionUNet(nn.Module):
 
         self._validate_input(x)
 
-        # Encoder
-        e1 = self.enc1(x)
-
-        e2 = self.enc2(
-            self.pool(e1)
+        # Encoder + channel attention
+        e1 = self.se1(
+            self.enc1(x)
         )
 
-        e3 = self.enc3(
-            self.pool(e2)
+        e2 = self.se2(
+            self.enc2(
+                self.pool(e1)
+            )
         )
 
-        e4 = self.enc4(
-            self.pool(e3)
+        e3 = self.se3(
+            self.enc3(
+                self.pool(e2)
+            )
+        )
+
+        e4 = self.se4(
+            self.enc4(
+                self.pool(e3)
+            )
         )
 
         # Bridge
