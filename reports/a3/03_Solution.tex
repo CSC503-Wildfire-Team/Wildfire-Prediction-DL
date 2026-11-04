@@ -39,7 +39,7 @@
 \usepackage{amsmath}
 
 \begin{document}
-\title{Geospatial Foundation Model Embedding-Augmented Attention-U-Net for Next-Day Wildfire Spread Prediction}
+\title{Geospatial Foundation Model Embedding-Augmented Multi-Attention-U-Net for Next-Day Wildfire Spread Prediction}
 
 \author{Sebastian Brubaker}
 \affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
@@ -59,10 +59,10 @@
 
 
 \begin{abstract}
-We specify a geospatial foundation-model-augmented Attention U-Net for single-time-step wildfire spread prediction. We use WildfireSpreadTS,  
-in conjunction with AlphaEarth Foundations (AEF) embeddings. The methodological contribution is a feature-fusion pipeline using an Attention 
-U-Net with spatially selective skip connections to fuse the environmental features of WildfireSpreadTS with AEF's learned annual environmental 
-representations. 
+We specify a geospatial foundation-model-augmented multi-attention U-Net for single-time-step wildfire spread prediction. We use WildfireSpreadTS,  
+in conjunction with AlphaEarth Foundations (AEF) embeddings. The methodological contribution is a feature-fusion pipeline using a U-Net 
+with spatially selective skip connections and channel attention to fuse the environmental features of WildfireSpreadTS with AEF's learned 
+annual environmental representations. 
 
 Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-DL
 \end{abstract}
@@ -83,7 +83,7 @@ Next-day wildfire spread prediction is framed as a single-time-step, segmentatio
 state and environmental conditions and forecasts available at day $t$, estimate the active-fire mask at $t+1$. For a sample at 
 date $t$, let $\mathbf{X}_t \in \mathbb{R}^{40\times H\times W}$ denote the preprocessed 40-channel WildfireSpreadTS tensor and let 
 $\mathbf{Y}_{t+1}\in\{0,1\}^{H\times W}$ denote the binary next-day VIIRS active-fire mask. Let 
-$\mathbf{E}_t\in\mathbb{R}^{64\times H\times W}$ be the AEF tensor aligned to the same 375-m grid. Then proposed predictor is expressed as
+$\mathbf{E}_t\in\mathbb{R}^{64\times H\times W}$ be the AEF tensor aligned to the same 375-m grid. The proposed predictor is expressed as
 \begin{equation}
  f_\theta:\mathbb{R}^{104\times H\times W}\rightarrow[0,1]^{H\times W},\qquad
  f_\theta(\mathbf{Z}_t) = \widehat{\mathbf{Y}}_{t+1},\quad
@@ -96,8 +96,10 @@ WildfireSpreadTS channels and 64 AEF embedding channels.
 
 
 \section{Proposed Method}
-We propose augmenting the WildfireSpreadTS feature stack with AEF embeddings, yielding a predictor suitable for a spatially attentive 
-U-Net architecture, specifically, we adapt the Attention U-Net proposed by Almakrami et al. \cite{almakrami}.
+We augment WildfireSpreadTS with AEF embeddings and employ a Squeeze-Excitation (SE) \cite{SE2017}-augmented Attention U-Net. The architecture incorporates 
+channel-wise feature recalibration through SE blocks and spatially selective skip connections through the attention gates proposed by 
+Almakrami et al. \cite{almakrami}.
+
 
 \subsection{Temporal and Spatial Embedding Alignment}
 AEF provides annual embeddings beginning in 2017 \cite{brown}. For an event in calendar year $y$, the annual layer indexed $y-1$ is 
@@ -121,7 +123,7 @@ Note, representing each 375-m cell with one vector loses sub-pixel heterogeneity
 \caption{Efficient Cosine-Medoid Aggregation of AEF Embeddings}
 \small
 \begin{algorithmic}[1]
-\Require AEF annual layer $\mathbf A_y$; target 375-m grid $\mathcal G$
+\Require AEF annual layer $\mathbf A_{y-1}$; target 375-m grid $\mathcal G$
 \Ensure Aggregated embedding tensor $\mathbf E_y\in\mathbb R^{64\times H\times W}$
 
 \State $\mathbf E_y \gets \text{NaN}$ 
@@ -147,17 +149,11 @@ categorical land-cover and active-fire channels retain their encoded representat
 obtained by equation \eqref{eq:problem}. Since image dimensions vary between events, samples are cropped or padded to a common spatial size 
 compatible with mini-batch training, subsequently, padded pixels are excluded from the loss.
 
-\subsection{Attention U-Net}
-Adapting the wildfire Attention U-Net proposed by Almakrami et al.
-\cite{almakrami}, the input layer is modified to receive 104 channels while the remaining architecture is left unchanged;
-four encoder levels each use double convolutions, consisting of
-$3 \times 3$ convolutions, batch normalizations, and ReLUs,
-followed by $2\times2$ max pooling. A two-convolution,
-1024-filter bridge connects the encoder and decoder.
-
-The encoder is initialized with $\mathbf{F}^{enc}_0=\mathbf{Z}_t$.
-At each level $l\in\{1,2,3,4\}$, the convolved feature map
-and subsequent pooled representation are given by:
+\subsection{Multi-Attention U-Net} 
+Four levels each apply double convolutions, followed by an SE block and $2\times2$ max pooling. A two-convolution, 1024-filter bridge connects 
+the encoder and decoder. The encoder is initialized with $\mathbf{F}^{enc}_0=\mathbf{Z}_t$.
+At each level $l\in\{1,2,3,4\}$, the convolved feature maps
+and subsequent pooled representations are given by:
 
 \begin{equation}
 \mathbf{C}^{enc}_{l} = \operatorname{ReLU}\left(
@@ -173,16 +169,31 @@ and subsequent pooled representation are given by:
 \end{equation}
 
 \begin{equation}
+\begin{aligned}
+\mathbf{z}_l &= \operatorname{GAP}(\mathbf{C}^{enc}_l),\\
+\mathbf{a}_l &= \sigma\left(
+\mathbf{W}^{SE}_{l,2}
+\operatorname{ReLU}\left(
+\mathbf{W}^{SE}_{l,1}\mathbf{z}_l
+\right)\right),\\
+\widetilde{\mathbf{C}}^{enc}_l
+&= \mathbf{a}_l \odot \mathbf{C}^{enc}_l,
+\end{aligned}
+\label{eq:se}
+\end{equation}
+
+\begin{equation}
 \mathbf{F}^{enc}_{l} =
-\operatorname{MaxPool}_{2 \times 2}
-\left(\mathbf{C}^{enc}_{l}\right)
+\operatorname{MaxPool}_{2\times2}
+\left(\widetilde{\mathbf{C}}^{enc}_{l}\right)
 \label{eq:maxpool}
 \end{equation}
 
 where $\mathbf{W}_{l,1}^{enc}$ and $\mathbf{W}_{l,2}^{enc}$ are
 learnable convolutional parameters, $*$ denotes convolution,
-$\operatorname{BN}$ denotes batch normalization, and
-$\operatorname{ReLU}$ denotes the rectified linear unit.
+$\operatorname{BN}$ denotes batch normalization, $\operatorname{ReLU}$ denotes the rectified linear unit, 
+$\operatorname{GAP}$ denotes global average pooling, $\sigma$ denotes the sigmoid function, and $\odot$ 
+denotes element-wise multiplication. 
 
 The bridge applies the same double-convolution operation to
 the final pooled encoder representation:
@@ -222,7 +233,7 @@ corresponding encoder features:
 \operatorname{ReLU}\left(
   \mathbf{W}_{l,2}^{att} * \mathbf{U}_{l}
   +
-  \mathbf{W}_{l,1}^{att} * \mathbf{C}^{enc}_{l}
+  \mathbf{W}_{l,1}^{att} * \widetilde{\mathbf{C}}^{enc}_{l}
   +
   \mathbf{b}_{l}
 \right)
@@ -234,20 +245,14 @@ where $\mathbf{W}_{l,1}^{att}$ and $\mathbf{W}_{l,2}^{att}$
 are learnable convolutional transformations that project
 the encoder and decoder features into a common feature space.
 $\mathbf{W}_{l,3}^{att}$ projects the combined representation
-to a single-channel attention score, $\mathbf{b}_{l}$ is a
-learnable bias, and $\sigma$ denotes the sigmoid function.
-The resulting coefficients $\mathbf{A}_{l}$ are applied
-element-wise to the encoder features:
+to a single-channel attention score and $\mathbf{b}_{l}$ is a bias. 
+The resulting coefficients $\mathbf{A}_{l}$ are applied element-wise to the encoder features:
 
 \begin{equation}
 \hat{\mathbf{F}}^{enc}_{l} =
-\mathbf{A}_{l} \odot \mathbf{C}^{enc}_{l}
+\mathbf{A}_{l} \odot \widetilde{\mathbf{C}}^{enc}_{l}.
 \label{eq:gatedfeatures}
 \end{equation}
-
-where $\odot$ denotes element-wise multiplication, with the
-single-channel attention coefficients broadcast across the
-encoder feature channels.
 
 The gated encoder features are concatenated with the upsampled
 decoder features and passed through a double-convolution block:
@@ -302,24 +307,76 @@ $\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\ta
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-  n/.style={draw,rounded corners,align=center,font=\scriptsize,inner sep=3pt,minimum height=6mm,text width=0.80\columnwidth},
-  s/.style={draw,rounded corners,align=center,font=\scriptsize,inner sep=3pt,minimum height=7mm,text width=0.39\columnwidth},
-  a/.style={-{Latex[length=1.5mm]},semithick},
-  node distance=2.3mm and 3mm]
-  \node[s] (x) {WildfireSpreadTS daily inputs\\40 preprocessed channels, $H\times W$};
-  \node[s,right=of x] (ae) {Preceding-year AEF\\64-D, approx. 10-m pixels};
-  \node[n,below=of ae] (med) {Spatial assignment to 375-m cells; exact cosine medoid\\$\mathbf E_t\in\mathbb R^{64\times H\times W}$};
-  \node[n,below=of med] (cat) {Channel concatenation\\$\mathbf{Z}_t = \mathbf{X}_t \mathbin{\Vert}_{C} \mathbf{E}_t\in\mathbb R^{104\times H\times W}$};
-  \node[n,below=of cat] (net) {Attention U-Net};
-  \node[n,below=of net] (out) {Next-day fire-presence probabilities\\$\widehat{\mathbf Y}_{t+1}\in[0,1]^{H\times W}$};
-  \draw[a] (x.south) |- (cat.west);
-  \draw[a] (ae.south)--(med.north);
-  \draw[a] (med.south)--(cat.north);
-  \draw[a] (cat.south)--(net.north);
-  \draw[a] (net.south)--(out.north);
+    >=stealth,
+    enc/.style={
+        draw, rounded corners, align=center,
+        font=\scriptsize, text width=1.65cm,
+        minimum height=0.55cm, inner sep=1.5pt
+    },
+    gate/.style={
+        draw, rounded corners, align=center,
+        font=\tiny, text width=0.85cm,
+        minimum height=0.4cm, inner sep=1pt
+    },
+    arr/.style={->, thin},
+    skip/.style={->, thin, dashed}
+]
+
+% Encoder (left)
+\node[enc] (in) at (0,0.8) {Input\\$104\times H\times W$};
+\node[enc] (e1) at (0,0) {Encoder 1\\Double Conv + SE};
+\node[enc] (e2) at (0,-1.1) {Encoder 2\\Double Conv + SE};
+\node[enc] (e3) at (0,-2.2) {Encoder 3\\Double Conv + SE};
+\node[enc] (e4) at (0,-3.3) {Encoder 4\\Double Conv + SE};
+
+% Bridge
+\node[enc] (b) at (2.8,-4.4) {Bridge\\Double Conv};
+
+% Attention gates (middle)
+\node[gate] (g4) at (2.8,-3.3) {Attention\\Gate};
+\node[gate] (g3) at (2.8,-2.2) {Attention\\Gate};
+\node[gate] (g2) at (2.8,-1.1) {Attention\\Gate};
+\node[gate] (g1) at (2.8,0) {Attention\\Gate};
+
+% Decoder (right)
+\node[enc] (d4) at (5.6,-3.3) {Decoder 4\\UpConv + Concat\\Double Conv};
+\node[enc] (d3) at (5.6,-2.2) {Decoder 3\\UpConv + Concat\\Double Conv};
+\node[enc] (d2) at (5.6,-1.1) {Decoder 2\\UpConv + Concat\\Double Conv};
+\node[enc] (d1) at (5.6,0) {Decoder 1\\UpConv + Concat\\Double Conv};
+\node[enc] (out) at (5.6,0.8) {1$\times$1 Conv + Sigmoid\\Fire probabilities};
+
+% Encoder flow
+\draw[arr] (in) -- (e1);
+\draw[arr] (e1) -- (e2);
+\draw[arr] (e2) -- (e3);
+\draw[arr] (e3) -- (e4);
+\draw[arr] (e4.south) |- (b.west);
+
+% Decoder flow
+\draw[arr] (b.east) -| (d4.south);
+\draw[arr] (d4) -- (d3);
+\draw[arr] (d3) -- (d2);
+\draw[arr] (d2) -- (d1);
+\draw[arr] (d1) -- (out);
+
+% Attention-gated skip connections
+\draw[skip] (e1.east) -- (g1.west);
+\draw[skip] (g1.east) -- (d1.west);
+
+\draw[skip] (e2.east) -- (g2.west);
+\draw[skip] (g2.east) -- (d2.west);
+
+\draw[skip] (e3.east) -- (g3.west);
+\draw[skip] (g3.east) -- (d3.west);
+
+\draw[skip] (e4.east) -- (g4.west);
+\draw[skip] (g4.east) -- (d4.west);
+
 \end{tikzpicture}
-\caption{Feature construction and inference.}
-\label{fig:pipeline}
+\caption{SE-augmented Attention U-Net. Encoder stages use
+squeeze-and-excitation (SE) blocks; dashed connections indicate
+attention-gated skip connections to the decoder.}
+\label{fig:architecture}
 \end{figure}
 
 \bibliographystyle{ACM-Reference-Format}
