@@ -79,7 +79,7 @@ layers at approximately 10-m spatial resolution \cite{brown}.
 
 
 \section{Problem Definition}
-Next-day wildfire spread prediction is framed as a single-time-step, segmentation---dense image classification task: given the observed fire 
+Next-day wildfire spread prediction is framed as single-time-step, semantic segmentation: given the observed fire 
 state and environmental conditions and forecasts available at day $t$, estimate the active-fire mask at $t+1$. For a sample at 
 date $t$, let $\mathbf{X}_t \in \mathbb{R}^{40\times H\times W}$ denote the preprocessed 40-channel WildfireSpreadTS tensor and let 
 $\mathbf{Y}_{t+1}\in\{0,1\}^{H\times W}$ denote the binary next-day VIIRS active-fire mask. Let 
@@ -91,18 +91,18 @@ $\mathbf{E}_t\in\mathbb{R}^{64\times H\times W}$ be the AEF tensor aligned to th
  \label{eq:problem}
 \end{equation}
 where $H$ and $W$ are the sample-specific height and width (with $304\leq H\leq356$ and $207\leq W\leq308$), $\Vert_C$ denotes concatenation 
-along the channel axis, and $\theta$ denotes the set of tuneable parameters and the 104 input channels comprise the 40 preprocessed 
-WildfireSpreadTS channels and 64 AEF embedding channels.
+along the channel axis, and $\theta$ denotes the set of tuneable parameters.
 
 
 \section{Proposed Method}
-We augment WildfireSpreadTS with AEF embeddings and employ a Squeeze-Excitation (SE) \cite{SE2017}-augmented Attention U-Net. The architecture incorporates 
+We augment WildfireSpreadTS with AEF embeddings and employ a Squeeze-Excitation (SE) \cite{SE2017}-augmented Attention U-Net \cite{almakrami}. 
+The architecture incorporates 
 channel-wise feature recalibration through SE blocks and spatially selective skip connections through the attention gates proposed by 
 Almakrami et al. \cite{almakrami}.
 
 
 \subsection{Temporal and Spatial Embedding Alignment}
-AEF provides annual embeddings beginning in 2017 \cite{brown}. For an event in calendar year $y$, the annual layer indexed $y-1$ is 
+For an event in calendar year $y$, the annual layer indexed $y-1$ is 
 used to prevent data leakage. Since WildfireSpreadTS contains events from 2018--2021, the preceding-year layers 2017--2020 are available for 
 all four dataset years.
 
@@ -119,8 +119,8 @@ $\bar{\mathbf{v}}_{g,i}=\mathbf{v}_{g,i}/\|\mathbf{v}_{g,i}\|_2$, and select the
 
 Note, representing each 375-m cell with one vector loses sub-pixel heterogeneity and may suppress minority patterns.
 
-\begin{algorithm}[t]
-\caption{Efficient Cosine-Medoid Aggregation of AEF Embeddings}
+\begin{algorithm}[ht!]
+\caption{Cosine-Medoid Aggregation of AEF Embeddings}
 \small
 \begin{algorithmic}[1]
 \Require AEF annual layer $\mathbf A_{y-1}$; target 375-m grid $\mathcal G$
@@ -151,9 +151,8 @@ compatible with mini-batch training, subsequently, padded pixels are excluded fr
 
 \subsection{Multi-Attention U-Net} 
 Four levels each apply double convolutions, followed by an SE block and $2\times2$ max pooling. A two-convolution, 1024-filter bridge connects 
-the encoder and decoder. The encoder is initialized with $\mathbf{F}^{enc}_0=\mathbf{Z}_t$.
-At each level $l\in\{1,2,3,4\}$, the convolved feature maps
-and subsequent pooled representations are given by:
+the encoder and decoder (Figure \ref{fig:architecture}). The encoder is initialized with $\mathbf{F}^{enc}_0=\mathbf{Z}_t$.
+At each level $l\in\{1,2,3,4\}$, the convolved feature maps and subsequent pooled representations are given by:
 
 \begin{equation}
 \mathbf{C}^{enc}_{l} = \operatorname{ReLU}\left(
@@ -287,24 +286,8 @@ the next-day fire probability map:
 \label{eq:prediction}
 \end{equation}
 
-\subsection{Training and Inference}
-Due to the severe class imbalance inherent to wildfire spread prediction datasets \cite{gerard2023wildfirespreadts}, a hybrid loss function 
-composed of a weighted sum of BCE 
-$\mathcal{L}_{\mathrm{BCE}}$ and Dice loss 
-$\mathcal{L}_{\mathrm{Dice}}$ is used \cite{almakrami}. 
-\begin{align}
- \mathcal{L}_{\mathrm{BCE}}&=-\frac{1}{|\Omega|}\sum_{p\in\Omega}\left[Y_p\log\hat Y_p+(1-Y_p)\log(1-\hat Y_p)\right],\\[-1mm]
- \mathcal{L}_{\mathrm{Dice}}&=1-\frac{2\sum_{p\in\Omega}Y_p\hat Y_p+\epsilon}{\sum_{p\in\Omega}Y_p+\sum_{p\in\Omega}\hat Y_p+\epsilon},\\[-1mm]
- \mathcal{L}&=\lambda\mathcal{L}_{\mathrm{BCE}}+(1-\lambda)\mathcal{L}_{\mathrm{Dice}}.
- \label{eq:loss}
-\end{align}
-where $\Omega$ is the set of valid pixels and $\epsilon$ is a constant for numerical stability. Observe, BCE penalizes pixel-wise errors 
-while Dice rewards region overlap. At inference time a binary mask may be computed as 
-$\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\tau \in [0,1]$.
 
-\textit{Training configuations and hyperparameters, and data splits are detailed in Milestone 4: Evaluation.} 
-
-\begin{figure}[t]
+\begin{figure}[ht!]
 \centering
 \begin{tikzpicture}[
     >=stealth,
@@ -324,10 +307,10 @@ $\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\ta
 
 % Encoder (left)
 \node[enc] (in) at (0,0.8) {Input\\$104\times H\times W$};
-\node[enc] (e1) at (0,0) {Encoder 1\\Double Conv + SE};
-\node[enc] (e2) at (0,-1.1) {Encoder 2\\Double Conv + SE};
-\node[enc] (e3) at (0,-2.2) {Encoder 3\\Double Conv + SE};
-\node[enc] (e4) at (0,-3.3) {Encoder 4\\Double Conv + SE};
+\node[enc] (e1) at (0,0) {Encoder 1\\Double Conv, SE};
+\node[enc] (e2) at (0,-1.1) {Encoder 2\\Double Conv, SE};
+\node[enc] (e3) at (0,-2.2) {Encoder 3\\Double Conv, SE};
+\node[enc] (e4) at (0,-3.3) {Encoder 4\\Double Conv, SE};
 
 % Bridge
 \node[enc] (b) at (2.8,-4.4) {Bridge\\Double Conv};
@@ -339,11 +322,11 @@ $\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\ta
 \node[gate] (g1) at (2.8,0) {Attention\\Gate};
 
 % Decoder (right)
-\node[enc] (d4) at (5.6,-3.3) {Decoder 4\\UpConv + Concat\\Double Conv};
-\node[enc] (d3) at (5.6,-2.2) {Decoder 3\\UpConv + Concat\\Double Conv};
-\node[enc] (d2) at (5.6,-1.1) {Decoder 2\\UpConv + Concat\\Double Conv};
-\node[enc] (d1) at (5.6,0) {Decoder 1\\UpConv + Concat\\Double Conv};
-\node[enc] (out) at (5.6,0.8) {1$\times$1 Conv + Sigmoid\\Fire probabilities};
+\node[enc] (d4) at (5.6,-3.3) {Decoder 4\\UpConv, Concat,\\Double Conv};
+\node[enc] (d3) at (5.6,-2.2) {Decoder 3\\UpConv, Concat,\\Double Conv};
+\node[enc] (d2) at (5.6,-1.1) {Decoder 2\\UpConv, Concat,\\Double Conv};
+\node[enc] (d1) at (5.6,0) {Decoder 1\\UpConv, Concat,\\Double Conv};
+\node[enc] (out) at (5.6,0.8) {1$\times$1 Conv, Sigmoid\\Fire probabilities};
 
 % Encoder flow
 \draw[arr] (in) -- (e1);
@@ -373,11 +356,26 @@ $\widehat Y_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat Y_{t+1,p}\geq\tau]$, $\ta
 \draw[skip] (g4.east) -- (d4.west);
 
 \end{tikzpicture}
-\caption{SE-augmented Attention U-Net. Encoder stages use
-squeeze-and-excitation (SE) blocks; dashed connections indicate
-attention-gated skip connections to the decoder.}
+\caption{SE-augmented Attention U-Net architecture.}
 \label{fig:architecture}
 \end{figure}
+
+\subsection{Training and Inference}
+Due to the severe class imbalance inherent to wildfire spread prediction datasets \cite{gerard2023wildfirespreadts}, a hybrid loss function 
+composed of a linear combination of BCE 
+$\mathcal{L}_{\mathrm{BCE}}$ and Dice loss 
+$\mathcal{L}_{\mathrm{Dice}}$ is used \cite{almakrami}. 
+\begin{align}
+ \mathcal{L}_{\mathrm{BCE}}&=-\frac{1}{|\Omega|}\sum_{p\in\Omega}\left[\mathbf{Y}_p\log \widehat{\mathbf{Y}}_p + (1-\mathbf{Y}_p)\log(1 - \widehat{\mathbf{Y}}_p)\right],\\[-1mm]
+ \mathcal{L}_{\mathrm{Dice}}&=1-\frac{2\sum_{p\in\Omega}\mathbf{Y}_p\widehat{\mathbf{Y}}_p+\epsilon}{\sum_{p\in\Omega}\mathbf{Y}_p+\sum_{p\in\Omega}\widehat{\mathbf{Y}}_p + \epsilon},\\[-1mm]
+ \mathcal{L}&=\lambda\mathcal{L}_{\mathrm{BCE}}+(1-\lambda)\mathcal{L}_{\mathrm{Dice}}.
+ \label{eq:loss}
+\end{align}
+where $\Omega$ is the set of valid pixels and $\epsilon$ is a constant for numerical stability. Observe, BCE penalizes pixel-wise errors 
+while Dice rewards region overlap. At inference time a binary mask may be computed as 
+$\widehat{\mathbf{Y}}_{t+1,p}^{\mathrm{bin}}=\mathbf{1}[\widehat{\mathbf{Y}}_{t+1,p}\geq\tau]$, $\tau \in [0,1]$.
+
+Training configurations and hyperparameters, and data splits are detailed in Milestone 4: \textit{Evaluation}.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}
