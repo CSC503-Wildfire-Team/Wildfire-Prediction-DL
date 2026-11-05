@@ -71,7 +71,7 @@ Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-
 \maketitle
 
 \section{Introduction}
-The WildfireSpreadTS is a multi-modal, remote-sensing dataset comprising 13,607 daily images across 607 wildfire events in the western United 
+WildfireSpreadTS is a multi-modal, remote-sensing dataset comprising 13,607 daily images across 607 wildfire events in the western United 
 States from 2018 to 2021. It provides 23 channels describing vegetation, fire activity, weather, topography, land cover, and next-day weather 
 forecasts. Its proposed preprocessing expands these into 40 predictor channels \cite{gerard2023wildfirespreadts}. AlphaEarth Foundations (AEF) 
 learns general-purpose geospatial representations from multiple Earth-observation sources and releases annual 64-dimensional embedding 
@@ -302,31 +302,45 @@ the next-day fire probability map:
         minimum height=0.4cm, inner sep=1pt
     },
     arr/.style={->, thin},
-    skip/.style={->, thin, dashed}
+    skip/.style={->, thin, dashed},
+    gatein/.style={->, semithick, densely dotted}
 ]
 
-% Encoder (left)
-\node[enc] (in) at (0,0.8) {Input\\$104\times H\times W$};
-\node[enc] (e1) at (0,0) {Encoder 1\\Double Conv, SE};
-\node[enc] (e2) at (0,-1.1) {Encoder 2\\Double Conv, SE};
-\node[enc] (e3) at (0,-2.2) {Encoder 3\\Double Conv, SE};
-\node[enc] (e4) at (0,-3.3) {Encoder 4\\Double Conv, SE};
+% Encoder
+\node[enc] (in) at (0,0.8)
+    {Input\\$104\times H\times W$};
+
+\node[enc] (e1) at (0,0)
+    {Encoder 1\\Double Conv + SE};
+\node[enc] (e2) at (0,-1.1)
+    {Encoder 2\\Double Conv + SE};
+\node[enc] (e3) at (0,-2.2)
+    {Encoder 3\\Double Conv + SE};
+\node[enc] (e4) at (0,-3.3)
+    {Encoder 4\\Double Conv + SE};
 
 % Bridge
-\node[enc] (b) at (2.8,-4.4) {Bridge\\Double Conv};
+\node[enc] (b) at (2.8,-4.4)
+    {Bridge\\Double Conv};
 
-% Attention gates (middle)
+% Attention gates
 \node[gate] (g4) at (2.8,-3.3) {Attention\\Gate};
 \node[gate] (g3) at (2.8,-2.2) {Attention\\Gate};
 \node[gate] (g2) at (2.8,-1.1) {Attention\\Gate};
 \node[gate] (g1) at (2.8,0) {Attention\\Gate};
 
-% Decoder (right)
-\node[enc] (d4) at (5.6,-3.3) {Decoder 4\\UpConv, Concat,\\Double Conv};
-\node[enc] (d3) at (5.6,-2.2) {Decoder 3\\UpConv, Concat,\\Double Conv};
-\node[enc] (d2) at (5.6,-1.1) {Decoder 2\\UpConv, Concat,\\Double Conv};
-\node[enc] (d1) at (5.6,0) {Decoder 1\\UpConv, Concat,\\Double Conv};
-\node[enc] (out) at (5.6,0.8) {1$\times$1 Conv, Sigmoid\\Fire probabilities};
+% Decoder
+\node[enc] (d4) at (5.6,-3.3)
+    {Decoder 4\\UpConv + Concat\\Double Conv};
+\node[enc] (d3) at (5.6,-2.2)
+    {Decoder 3\\UpConv + Concat\\Double Conv};
+\node[enc] (d2) at (5.6,-1.1)
+    {Decoder 2\\UpConv + Concat\\Double Conv};
+\node[enc] (d1) at (5.6,0)
+    {Decoder 1\\UpConv + Concat\\Double Conv};
+
+\node[enc] (out) at (5.6,0.8)
+    {1$\times$1 Conv + Sigmoid\\Fire probabilities};
 
 % Encoder flow
 \draw[arr] (in) -- (e1);
@@ -342,21 +356,33 @@ the next-day fire probability map:
 \draw[arr] (d2) -- (d1);
 \draw[arr] (d1) -- (out);
 
-% Attention-gated skip connections
+% Encoder skip features entering attention gates
 \draw[skip] (e1.east) -- (g1.west);
-\draw[skip] (g1.east) -- (d1.west);
-
 \draw[skip] (e2.east) -- (g2.west);
-\draw[skip] (g2.east) -- (d2.west);
-
 \draw[skip] (e3.east) -- (g3.west);
-\draw[skip] (g3.east) -- (d3.west);
-
 \draw[skip] (e4.east) -- (g4.west);
+
+% Gated encoder features entering decoder stages
+\draw[skip] (g1.east) -- (d1.west);
+\draw[skip] (g2.east) -- (d2.west);
+\draw[skip] (g3.east) -- (d3.west);
 \draw[skip] (g4.east) -- (d4.west);
 
+% Upsampled decoder features entering attention gates
+\draw[gatein] (d1.west)
+    .. controls +(0,0.28) and +(0,0.28) .. (g1.east);
+\draw[gatein] (d2.west)
+    .. controls +(0,0.28) and +(0,0.28) .. (g2.east);
+\draw[gatein] (d3.west)
+    .. controls +(0,0.28) and +(0,0.28) .. (g3.east);
+\draw[gatein] (d4.west)
+    .. controls +(0,0.28) and +(0,0.28) .. (g4.east);
+
 \end{tikzpicture}
-\caption{SE-augmented Attention U-Net architecture.}
+\caption{SE-augmented Attention U-Net architecture. Encoder features
+and upsampled decoder features enter the attention gates. The gated
+encoder features are concatenated with the upsampled decoder features
+before the decoder convolution blocks.}
 \label{fig:architecture}
 \end{figure}
 
