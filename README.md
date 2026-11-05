@@ -139,6 +139,46 @@ aef_model = AttentionUNet(n_in_channels=104)
 
 The model-side training API is independent of dataset splitting and experiment-specific hyperparameters, allowing the same implementation to be reused as the evaluation protocol evolves.
 
+## Quickstart
+
+The project includes a quickstart script (`quickstart.py`) to verify that the wildfire prediction models, training pipeline, and checkpoint generation are functioning correctly.
+
+### 1. Set Up the Environment
+
+Navigate to the repository's root directory:
+
+```bash
+cd Wildfire-Prediction-DL
+```
+Create and activate a Python virtual environment (Only if Python is not installed on local desktop):
+
+```python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project dependencies:
+
+```
+python3 -m pip install -r requirements.txt
+```
+### 2. Run the Quickstart
+Default Mode: WSTS + AEF
+
+Run the quickstart script with both input modalities enabled:
+```
+python3 quickstart.py
+```
+
+Baseline Mode: WSTS-only:
+```
+python3 quickstart.py --baseline
+```
+
+### 3. Run the Tests
+```
+python3 -m pytest -q
+```
+
 ## Repository Structure
 
 The repository separates dataset preparation from the model-side implementation and project reports:
