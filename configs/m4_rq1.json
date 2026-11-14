@@ -1,0 +1,44 @@
+{
+  "seed": 0,
+  "crop_side_length": 128,
+  "threshold": 0.5,
+
+  "model": {
+    "name": "attention_unet_se",
+    "base_channels": 64,
+    "use_se": true
+  },
+
+  "training": {
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "loss": "bce_dice",
+    "bce_weight": 0.5,
+
+    "batch_size": null,
+    "max_epochs": null,
+    "early_stopping_patience": null,
+    "num_workers": null
+  },
+
+  "m4_folds": {
+    "0": {
+      "loader_fold": 0,
+      "train_years": [2018, 2019],
+      "val_year": 2020,
+      "test_year": 2021
+    },
+    "1": {
+      "loader_fold": 2,
+      "train_years": [2018, 2020],
+      "val_year": 2019,
+      "test_year": 2021
+    },
+    "2": {
+      "loader_fold": 6,
+      "train_years": [2019, 2020],
+      "val_year": 2018,
+      "test_year": 2021
+    }
+  }
+}
