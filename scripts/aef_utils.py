@@ -136,9 +136,16 @@ def build_medoid_image(ee, grid, aef_year, n=N_SUB):
 
 def export_to_drive(ee, coarse, grid, name, folder):
     task = ee.batch.Export.image.toDrive(
-        image=coarse.toFloat(), description=name, folder=folder, fileNamePrefix=name,
+        image=coarse.toFloat(),
+        description=name,
+        folder=folder,
+        fileNamePrefix=name,
         region=region_geometry(ee, grid, inset_px=0.5),
-        crs=grid["crs"], crsTransform=grid["transform"],
-        maxPixels=int(1e10), fileFormat="GeoTIFF")
+        crs=grid["crs"],
+        crsTransform=grid["transform"],
+        maxPixels=int(1e10),
+        shardSize=64,
+        fileFormat="GeoTIFF",
+    )
     task.start()
     return task
