@@ -1,0 +1,108 @@
+\documentclass[sigconf]{acmart}
+% Cleaning
+\pagestyle{fancy} % removes running headers
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
+\pagestyle{plain} % removes running headers
+\fancyhead{}
+\settopmatter{printacmref=false, printfolios=false}
+% Copyright
+\setcopyright{none}
+% \setcopyright{acmcopyright}
+% \setcopyright{acmlicensed}
+% \setcopyright{rightsretained}
+% \setcopyright{usgov}
+% \setcopyright{usgovmixed}
+% \setcopyright{cagov}
+% \setcopyright{cagovmixed}
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\acmDOI{}
+\acmConference[CSC503/SENG474]{CSC503 \texttimes{} SENG474: Data Mining}{Fall 2026}{University of Victoria}
+
+\usepackage{booktabs} % For formal tables
+\usepackage{url}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+
+
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\topsep}{0pt}
+\setlength{\partopsep}{0pt}
+%\linespread{0.95}
+\usepackage{mdwlist}
+\usepackage{amsmath}
+
+\begin{document}
+\title{Evaluation of Proposed Geospatial Foundation Model Embedding-Augmented Multi-Attention-U-Net 
+for Next-Day Wildfire Spread Prediction}
+
+\author{Sebastian Brubaker}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
+\email{sebastian.brubaker@gmail.com}
+
+\author{Armaan Binpal}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
+\email{armaanbinpal1@gmail.com}
+
+\author{James Kim}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
+\email{jknhjk03@uvic.ca}
+
+\author{Bowen Zhang}
+\affiliation{\institution{University of Victoria}\city{Victoria}\state{British Columbia}\country{Canada}}
+\email{7pixels.v@gmail.com}
+
+
+\begin{abstract}
+[Give an overview of everything]
+
+Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-DL
+\end{abstract}
+
+\keywords{wildfire spread prediction, geospatial foundation models, AlphaEarth embeddings, remote sensing, semantic segmentation}
+\maketitle
+
+\section{Introduction}
+[Outline of the proposed model and a description of the evaluation methods.]
+
+\section{Research Questions}
+[Question and rationalized approach outline]
+
+\textbf{RQ1. [Mandatory]} Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth Foundations 
+embeddings improve next-day active-fire prediction performance?
+
+\textbf{RQ2. [Ideal]} Do channel-wise and spatial attention mechanisms improve next-day 
+active-fire prediction compared with a conventional U-Net?
+
+\textbf{RQ3. [Strong fall-back]} How sensitive is the proposed WSTS+AEF 
+model to the inference threshold?
+
+
+\section{Methodology \& Experimental Design}
+[Explain why and how ablating isolates feature predictive power. 
+Explain why baselines are used and justify each one.
+EXPLAIN AND JUSTIFY THE FOLLOWING:]
+\subsection{Dataset}
+\subsection{Preprocessing and Data Splits}
+\subsection{Models and Baselines}
+\subsection{Training and Evaluation Metrics}
+
+\section{Results}
+[PRESENT/REPORT DON'T ATTRIBUTE OR DISCUSS]
+\subsection{RQ1: Contribution of AEF Embeddings}
+\subsection{RQ2: Contribution of Attention Mechanisms}
+
+\section{Discussion}
+[Discuss results and draw conclusions.]
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bibliography}
+
+\end{document}
