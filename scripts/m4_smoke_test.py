@@ -20,6 +20,7 @@ from wsts_aef_dataset import (
 from src.attention_unet.model import AttentionUNet
 from src.attention_unet.losses import HybridBCEDiceLoss
 from src.attention_unet.reproducibility import set_seed
+from src.attention_unet.res18_unet import Res18UNetBaseline
 
 
 def parse_args():
@@ -29,9 +30,10 @@ def parse_args():
 
     parser.add_argument(
         "--mode",
-        choices=("wsts-control", "proposed"),
+        choices=("res18-baseline", "wsts-control", "proposed"),
         required=True,
         help=(
+            "res18-baseline: WSTS paper Res18 U-Net (40 channels); "
             "wsts-control: real 40-channel WSTS only; "
             "proposed: real 40-channel WSTS + real 64-channel AEF."
         ),
@@ -335,7 +337,7 @@ def main():
     print("Threshold:     ", config["threshold"])
     print()
 
-    if args.mode == "wsts-control":
+    if args.mode in ("res18-baseline", "wsts-control"):
         x, e, y = load_wsts_control_batch(args, config)
         model_input = x
         expected_channels = 40
@@ -360,20 +362,26 @@ def main():
             f"got {model_input.shape[1]}"
         )
 
-    params = inspect.signature(AttentionUNet).parameters
+    if args.mode == "res18-baseline":
+        model = Res18UNetBaseline(
+            n_in_channels=expected_channels,
+        ).to(device)
 
-    if "use_se" not in params:
-        raise RuntimeError(
-            "AttentionUNet does not support use_se. "
-            "Pull the latest repository version."
-        )
+    else:
+        params = inspect.signature(AttentionUNet).parameters
 
-    # Intentionally small for smoke testing only.
-    model = AttentionUNet(
-        n_in_channels=expected_channels,
-        base_channels=args.base_channels,
-        use_se=config["model"]["use_se"],
-    ).to(device)
+        if "use_se" not in params:
+            raise RuntimeError(
+                "AttentionUNet does not support use_se. "
+                "Pull the latest repository version."
+            )
+
+        # Intentionally small for smoke testing only.
+        model = AttentionUNet(
+            n_in_channels=expected_channels,
+            base_channels=args.base_channels,
+            use_se=config["model"]["use_se"],
+        ).to(device)
 
     loss_fn = HybridBCEDiceLoss(
         bce_weight=config["training"]["bce_weight"],
