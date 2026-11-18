@@ -64,7 +64,7 @@ Our loader builds on the original WildfireSpreadTS PyTorch implementation:
 
 AlphaEarth provides annual 64-dimensional pretrained geospatial embeddings at approximately 10 m spatial resolution.
 
-For each wildfire event, AEF embeddings are aligned to the exact 375 m WSTS grid. Fine-resolution embedding vectors within each WSTS pixel are reduced using a cosine medoid before being passed through the same crop/flip/rotation operations as the WSTS features.
+For each wildfire event, AEF embeddings are downloaded with Xarray on the exact fine grid, then reduced locally to one cosine-medoid vector per 375 m WSTS pixel. The resulting GeoTIFFs are written to `data/aef/` by default, avoiding a long Earth Engine Drive export for every fire. Set `--output-dir` to a Google Drive-synced directory if the files should appear in Drive.
 
 Relevant pipeline code:
 
@@ -73,6 +73,12 @@ Relevant pipeline code:
 - [AEF export](scripts/02_export_aef_medoids.py)
 - [Medoid validation](scripts/03_validate_aef_medoids.py)
 - [Pixel-alignment smoke test](scripts/05_smoke_test_dataset.py)
+
+Run the export after generating `data/events_index.csv` and authenticating Earth Engine:
+
+```bash
+python scripts/02_export_aef_medoids.py --project YOUR_PROJECT --index data/events_index.csv
+```
 
 ## Planned Experiments
 
