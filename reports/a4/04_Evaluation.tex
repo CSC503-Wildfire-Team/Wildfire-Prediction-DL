@@ -60,7 +60,10 @@ for Next-Day Wildfire Spread Prediction}
 
 
 \begin{abstract}
-[Give an overview of everything]
+This evaluation establishes the efficacy of the proposed geospatial foundation model 
+embedding-augmented multi-attention U-Net for next-day wildfire spread prediction. An experimental
+approach is used to benchmark the proposed method against existing methods and isolate the key factors 
+that determine performance. {\color{red}[KEY FINDINGS HERE]}. 
 
 Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-DL
 \end{abstract}
@@ -71,17 +74,35 @@ Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-
 \section{Introduction}
 [Outline of the proposed model and a description of the evaluation methods.]
 
+The proposed method comprises a custom U-Net with gated-skip-connection spatial attention \cite{almakrami} and 
+Squeeze-Excitation-based channel attention \cite{SE2017} which uses the conventional environmental predictors 
+of the WildfireSpreadTS dataset \cite{gerard2023wildfirespreadts} augmented with AlphaEarth Foundations (AEF) 
+embeddings \cite{brown} to predict the active-fire mask at day $t+1$ given the information available at day $t$.
+
+The efficacy of the proposed method is evaluated through an empirical approach; feature ablation isolates 
+the predictive performance increase yielded by the AEF embeddings, while architecture ablation isolates the 
+importance of spatial and channel attention, respectively. {\color{red}[Hotswap for inference threshold given 
+time constraints].}
+
 \section{Research Questions}
-[Question and rationalized approach outline]
+The proposed method is evaluated based on the following research questions:
 
-\textbf{RQ1. [Mandatory]} Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth Foundations 
-embeddings improve next-day active-fire prediction performance?
+\textbf{RQ1. {\color{red}[MANDATORY]} Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth 
+Foundations embeddings improve next-day active-fire prediction performance?} Two multi-attention U-Net models are 
+compared; The geospatial representation-augmented model is benchmarked against a conventional environmental 
+input-only model. 
+The two respective models are benchmarked against the WildfireSpreadTS benchmark models 
+\cite{gerard2023wildfirespreadts} as all models are developed using WildfireSpreadTS. 
 
-\textbf{RQ2. [Ideal]} Do channel-wise and spatial attention mechanisms improve next-day 
-active-fire prediction compared with a conventional U-Net?
+\textbf{RQ2. {\color{red}[IDEAL]} Do channel-wise and spatial attention mechanisms improve next-day 
+active-fire prediction compared with a conventional U-Net?} Four architectures are instantiated and compared: a 
+conventional U-Net, a gated skip gated-skip-connection spatial attention U-Net \cite{almakrami}, a 
+Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-attention U-Net. Again, additional 
+comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}. 
+{\color{red} [Can shrink the above to just two instances: no attention vs. multi-attention given time constraints.]}
 
-\textbf{RQ3. [Strong fall-back]} How sensitive is the proposed WSTS+AEF 
-model to the inference threshold?
+\textbf{RQ3. {\color{red}[STRONG FALLBACK]} How sensitive is the proposed WSTS+AEF 
+model to the inference threshold?} {\color{red} [Can pivot to this if need be.]}
 
 
 \section{Methodology \& Experimental Design}
