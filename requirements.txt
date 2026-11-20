@@ -3,6 +3,7 @@ numpy
 pandas
 torch
 torchvision
+segmentation-models-pytorch
 
 # Geospatial and dataset I/O
 rasterio
@@ -11,6 +12,9 @@ tqdm
 
 # AlphaEarth / Earth Engine
 earthengine-api
+geemap
+xarray
+xee
 
 # Testing
 pytest

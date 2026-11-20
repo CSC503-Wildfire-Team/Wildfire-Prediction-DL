@@ -15,6 +15,12 @@ reports/a3/*
 !reports/a3/*.bib
 reports/a3/draft*
 
+reports/a4/*
+!reports/a4/*.pdf
+!reports/a4/*.tex
+!reports/a4/*.bib
+reports/a4/draft*
+
 # More stuff here ...
 
 data/

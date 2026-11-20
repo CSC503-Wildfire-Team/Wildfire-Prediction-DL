@@ -124,28 +124,75 @@ def build_medoid_image(ee, grid, aef_year, n=N_SUB):
     # medoid score of each fine pixel = v . S  (argmax of this is the exact cosine medoid)
     score = fine.multiply(S_fine).reduce(ee.Reducer.sum()).rename("score")
 
-    # keep the 64 values of the fine pixel with the max score in each cell
-    stacked = score.addBands(fine)
-    coarse = (stacked.reduceResolution(reducer=ee.Reducer.max(len(BANDS) + 1), bestEffort=False,
+    # Keep one coherent fine-pixel vector per cell; reducing each band independently
+    # would combine values from different pixels and would not produce a medoid.
+    max_score = (score.reduceResolution(reducer=ee.Reducer.max(), bestEffort=False,
+                                        maxPixels=MAX_PIXELS)
+                 .reproject(coarse_proj)
+                 .reproject(fine_proj))
+    winners = fine.updateMask(score.eq(max_score))
+    coarse = (winners.reduceResolution(reducer=ee.Reducer.firstNonNull(), bestEffort=False,
                                        maxPixels=MAX_PIXELS)
               .reproject(coarse_proj)
-              .rename(["score"] + BANDS)       # positional rename; fails loudly if band count differs
-              .select(BANDS))
+              .rename(BANDS))
     return fine, coarse
 
 
-def export_to_drive(ee, coarse, grid, name, folder):
-    task = ee.batch.Export.image.toDrive(
-        image=coarse.toFloat(),
-        description=name,
-        folder=folder,
-        fileNamePrefix=name,
-        region=region_geometry(ee, grid, inset_px=0.5),
-        crs=grid["crs"],
-        crsTransform=grid["transform"],
-        maxPixels=int(1e10),
-        shardSize=64,
-        fileFormat="GeoTIFF",
+def download_fine_embeddings(ee, grid, aef_year, n=N_SUB):
+    """Fetch unit AEF vectors on the exact fine grid using geemap's Xarray reader."""
+    import geemap
+
+    fg = fine_grid(grid, n)
+    fine_proj = ee.Projection(fg["crs"], fg["transform"])
+    region = region_geometry(ee, fg, inset_px=0.5)
+    tiles = (ee.ImageCollection(AEF_COLLECTION)
+             .filterDate(f"{aef_year}-01-01", f"{aef_year + 1}-01-01")
+             .filterBounds(region_geometry(ee, grid, inset_px=-2))
+             .mosaic().select(BANDS))
+    fine = (tiles.divide(tiles.pow(2).reduce(ee.Reducer.sum()).sqrt())
+            .reproject(fine_proj))
+
+    dataset = geemap.ee_to_xarray(
+        dataset=fine,
+        geometry=region,
+        projection=fine_proj,
+    ).squeeze(drop=True)
+    x_dim = next((dim for dim in ("x", "longitude", "lon") if dim in dataset.dims), None)
+    y_dim = next((dim for dim in ("y", "latitude", "lat") if dim in dataset.dims), None)
+    if x_dim is None or y_dim is None:
+        raise ValueError(f"Xarray result must have x/y dimensions; got {dataset.dims}")
+
+    missing = set(BANDS).difference(dataset.data_vars)
+    if missing:
+        raise ValueError(f"Xarray result is missing AEF bands: {sorted(missing)}")
+    if set(dataset.dims) != {x_dim, y_dim}:
+        raise ValueError(f"Expected only spatial dimensions; got {dataset.dims}")
+    fine_array = np.asarray(
+        dataset[BANDS].to_array(dim="band").transpose("band", y_dim, x_dim).values,
+        dtype=np.float32,
     )
-    task.start()
-    return task
+    expected_shape = (fg["height"], fg["width"])
+    if fine_array.shape[1:] != expected_shape:
+        raise ValueError(f"Downloaded fine grid has shape {fine_array.shape[1:]}; "
+                         f"expected {expected_shape}")
+    return fine_array
+
+
+def write_medoid_geotiff(path, medoids, grid):
+    """Write (bands, height, width) medoids to a GeoTIFF on the WSTS grid."""
+    import rasterio
+    from affine import Affine
+
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        width=grid["width"],
+        height=grid["height"],
+        count=len(BANDS),
+        dtype="float32",
+        crs=grid["crs"],
+        transform=Affine(*grid["transform"]),
+        nodata=np.nan,
+    ) as dataset:
+        dataset.write(medoids.astype(np.float32, copy=False))
