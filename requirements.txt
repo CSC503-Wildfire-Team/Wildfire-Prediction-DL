@@ -12,9 +12,6 @@ tqdm
 
 # AlphaEarth / Earth Engine
 earthengine-api
-geemap
-xarray
-xee
 
 # Testing
 pytest

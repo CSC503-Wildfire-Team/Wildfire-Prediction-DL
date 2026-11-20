@@ -64,12 +64,13 @@ Our loader builds on the original WildfireSpreadTS PyTorch implementation:
 
 AlphaEarth provides annual 64-dimensional pretrained geospatial embeddings at approximately 10 m spatial resolution.
 
-For each wildfire event, AEF embeddings are downloaded with Xarray on the exact fine grid, then reduced locally to one cosine-medoid vector per 375 m WSTS pixel. The resulting GeoTIFFs are written to `data/aef/` by default, avoiding a long Earth Engine Drive export for every fire. Set `--output-dir` to a Google Drive-synced directory if the files should appear in Drive.
+For each wildfire event, AEF embeddings are aligned to the exact 375 m WSTS grid. Fine-resolution embedding vectors within each WSTS pixel are reduced using a cosine medoid before being passed through the same crop/flip/rotation operations as the WSTS features. The Earth Engine catalog states that the 64-D AEF vectors are already unit-length, so the exporter does not normalize them again.
 
 Relevant pipeline code:
 
 - [AEF medoid and grid utilities](scripts/aef_utils.py)
 - [WSTS event indexing](scripts/01_build_event_index.py)
+- [Filter fires by year range and per-year limit](scripts/06_filter_event_index.py)
 - [AEF export](scripts/02_export_aef_medoids.py)
 - [Medoid validation](scripts/03_validate_aef_medoids.py)
 - [Pixel-alignment smoke test](scripts/05_smoke_test_dataset.py)
@@ -77,8 +78,29 @@ Relevant pipeline code:
 Run the export after generating `data/events_index.csv` and authenticating Earth Engine:
 
 ```bash
-python scripts/02_export_aef_medoids.py --project YOUR_PROJECT --index data/events_index.csv
+python scripts/06_filter_event_index.py --index data/events_index.csv \
+  --out data/events_index_subset.csv --start-year 2018 --end-year 2021 \
+  --first-n 10 --year-stride
+python scripts/02_export_aef_medoids.py --project YOUR_PROJECT --index data/events_index_subset.csv
 ```
+
+The year bounds are inclusive. For each year, the filter keeps the first N rows in the source CSV.
+With `--year-stride`, it then interleaves those rows round-robin in ascending year order (for
+example, 2018, 2019, 2020, 2021, then back to 2018), preserving CSV order within each year. Without
+that option, the output retains the original CSV order. The exporter also does not sort rows, so you
+can arrange the index to control processing order. Each run appends to `data/aef_export.log` and atomically
+updates `data/aef_export_state.json` with task IDs and statuses. Re-running skips completed, active,
+and already-submitted tasks, and refreshes known Earth Engine task statuses. Use `--retry-failed` to
+resubmit failed or cancelled tasks, or `--state-file` to use a separate journal.
+
+Before submitting each task, the exporter checks the 64 output bands, CRS, affine transform, and
+the unit length of a sampled medoid vector. `--dry-run` performs the same checks without starting
+tasks. Since Drive exports run asynchronously, these checks verify the Earth Engine image graph and
+requested export grid; inspect downloaded GeoTIFF metadata if you need to validate the completed
+Drive artifact itself.
+
+The AEF normalization guarantee is documented in the
+[Earth Engine Satellite Embedding catalog](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL).
 
 ## Planned Experiments
 
