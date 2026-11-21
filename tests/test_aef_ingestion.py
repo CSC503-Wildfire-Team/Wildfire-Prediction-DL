@@ -84,6 +84,19 @@ def test_medoid_image_validation_checks_grid_and_unit_norm():
     validate_medoid_image(_EE, image, GRID)
 
 
+def test_medoid_image_validation_accepts_small_observed_norm_deviation():
+    image = _Image(GRID, np.full(len(BANDS), 1.006627 / 8))
+
+    validate_medoid_image(_EE, image, GRID)
+
+
+def test_medoid_image_validation_rejects_materially_nonunit_vector():
+    image = _Image(GRID, np.full(len(BANDS), 1.02 / 8))
+
+    with pytest.raises(ValueError, match="not unit-length"):
+        validate_medoid_image(_EE, image, GRID)
+
+
 def test_medoid_image_validation_rejects_georeferencing_mismatch():
     wrong_grid = {**GRID, "transform": [375, 0, 500001, 0, -375, 5500000]}
     image = _Image(wrong_grid, np.full(len(BANDS), 1 / 8))

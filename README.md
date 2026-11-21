@@ -64,7 +64,7 @@ Our loader builds on the original WildfireSpreadTS PyTorch implementation:
 
 AlphaEarth provides annual 64-dimensional pretrained geospatial embeddings at approximately 10 m spatial resolution.
 
-For each wildfire event, AEF embeddings are aligned to the exact 375 m WSTS grid. Fine-resolution embedding vectors within each WSTS pixel are reduced using a cosine medoid before being passed through the same crop/flip/rotation operations as the WSTS features. The Earth Engine catalog states that the 64-D AEF vectors are already unit-length, so the exporter does not normalize them again.
+For each wildfire event, AEF embeddings are aligned to the exact 375 m WSTS grid. Fine-resolution embedding vectors within each WSTS pixel are reduced using a cosine medoid before being passed through the same crop/flip/rotation operations as the WSTS features. This exporter reads the analysis-ready Earth Engine collection, whose 64-D vectors are documented as unit-length. The separate raw GCS COG files use signed 8-bit storage and require the documented nonlinear de-quantization transform; do not apply that transform to the Earth Engine collection.
 
 Relevant pipeline code:
 
@@ -94,13 +94,15 @@ and already-submitted tasks, and refreshes known Earth Engine task statuses. Use
 resubmit failed or cancelled tasks, or `--state-file` to use a separate journal.
 
 Before submitting each task, the exporter checks the 64 output bands, CRS, affine transform, and
-the unit length of a sampled medoid vector. `--dry-run` performs the same checks without starting
+that a sampled medoid vector's L2 norm is within 0.01 of 1. `--dry-run` performs the same checks without starting
 tasks. Since Drive exports run asynchronously, these checks verify the Earth Engine image graph and
 requested export grid; inspect downloaded GeoTIFF metadata if you need to validate the completed
 Drive artifact itself.
 
 The AEF normalization guarantee is documented in the
-[Earth Engine Satellite Embedding catalog](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL).
+[Earth Engine Satellite Embedding catalog](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL),
+and the raw COG encoding and de-quantization mapping are documented in the
+[AEF on GCS README](https://developers.google.com/earth-engine/guides/aef_on_gcs_readme).
 
 ## Planned Experiments
 

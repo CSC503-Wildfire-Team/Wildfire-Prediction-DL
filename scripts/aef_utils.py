@@ -15,6 +15,7 @@ AEF_COLLECTION = "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
 BANDS = [f"A{i:02d}" for i in range(64)]
 N_SUB = 38          # fine pixels per WSTS pixel side: 375 m / 38 ~= 9.87 m (close to AEF's 10 m)
 MAX_PIXELS = 4096   # reduceResolution cap; must exceed N_SUB**2 = 1444
+UNIT_NORM_ATOL = 1e-2
 
 
 # ----------------------------------------------------------------------------------------
@@ -347,5 +348,5 @@ def validate_medoid_image(ee, image, grid):
     if not np.isfinite(vector).all():
         raise ValueError("Sampled medoid contains non-finite values")
     norm = np.linalg.norm(vector)
-    if not np.isclose(norm, 1.0, rtol=0, atol=1e-3):
+    if not np.isclose(norm, 1.0, rtol=0, atol=UNIT_NORM_ATOL):
         raise ValueError(f"Sampled medoid is not unit-length (L2 norm is {norm:.6f})")

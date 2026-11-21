@@ -21,7 +21,6 @@ import pandas as pd
 
 from aef_utils import build_medoid_image, export_to_drive, validate_grid, validate_medoid_image
 
-
 ACTIVE_TASK_STATES = {"READY", "RUNNING", "CANCEL_REQUESTED", "CANCELING"}
 FAILED_TASK_STATES = {"FAILED", "CANCELLED"}
 
