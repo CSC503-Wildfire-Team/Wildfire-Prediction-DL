@@ -1,0 +1,66 @@
+{
+  "seed": 0,
+  "crop_side_length": 128,
+  "threshold": 0.5,
+
+  "dataset": {
+    "selected_fires_manifest": "configs/m4_selected_fires.csv",
+    "fires_per_year": 40,
+    "n_leading_observations": 1,
+    "use_all_valid_day_pairs": true,
+    "split_unit": "year_fire"
+  },
+
+  "model": {
+    "name": "channel_attention_unet",
+    "base_channels": 64,
+    "use_se": true,
+    "use_spatial_attention": false,
+    "wsts_channels": 40,
+    "aef_channels": 64
+  },
+
+  "training": {
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "loss": "bce_dice",
+    "bce_weight": 0.5,
+
+    "batch_size": 8,
+    "max_epochs": 30,
+    "early_stopping_patience": 5,
+    "num_workers": 2
+  },
+
+  "evaluation": {
+    "metrics": [
+      "iou",
+      "dice",
+      "precision",
+      "recall",
+      "f1"
+    ],
+    "selection_metric": "iou"
+  },
+
+  "m4_folds": {
+    "0": {
+      "loader_fold": 0,
+      "train_years": [2018, 2019],
+      "val_year": 2020,
+      "test_year": 2021
+    },
+    "1": {
+      "loader_fold": 2,
+      "train_years": [2018, 2020],
+      "val_year": 2019,
+      "test_year": 2021
+    },
+    "2": {
+      "loader_fold": 6,
+      "train_years": [2019, 2020],
+      "val_year": 2018,
+      "test_year": 2021
+    }
+  }
+}
