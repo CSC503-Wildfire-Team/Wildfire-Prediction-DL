@@ -1,0 +1,179 @@
+{
+  "mode": "proposed_104ch",
+  "started_at_utc": "2026-11-22T08:18:19.963286+00:00",
+  "finished_at_utc": "2026-11-22T10:52:35.196104+00:00",
+  "config_path": "/kaggle/working/Wildfire-Prediction-DL/configs/m4_rq1.json",
+  "manifest": "/kaggle/working/Wildfire-Prediction-DL/configs/m4_selected_fires.csv",
+  "folds_requested": [
+    0,
+    1,
+    2
+  ],
+  "folds_completed": [
+    0,
+    1,
+    2
+  ],
+  "test_evaluated": false,
+  "total_runtime_minutes": 154.25387990646666,
+  "fold_results": [
+    {
+      "m4_fold": 0,
+      "loader_fold": 0,
+      "train_years": [
+        2018,
+        2019
+      ],
+      "val_year": 2020,
+      "samples": {
+        "train": 1457,
+        "val": 682,
+        "test": 641
+      },
+      "best_epoch": 14,
+      "epochs_ran": 19,
+      "best_train_metrics": {
+        "loss": 0.3331786073800547,
+        "iou": 0.2454271763563156,
+        "dice": 0.3941253125667572,
+        "precision": 0.3951410949230194,
+        "recall": 0.39311471581459045,
+        "f1": 0.3941252529621124
+      },
+      "best_val_metrics": {
+        "loss": 0.46114223601181836,
+        "iou": 0.17708642780780792,
+        "dice": 0.30088943243026733,
+        "precision": 0.3216053247451782,
+        "recall": 0.28268077969551086,
+        "f1": 0.30088934302330017
+      },
+      "runtime_minutes": 55.417046436966665,
+      "checkpoint_path": "/kaggle/working/m4_runs_proposed/proposed_104ch_fold0_best.pt"
+    },
+    {
+      "m4_fold": 1,
+      "loader_fold": 2,
+      "train_years": [
+        2018,
+        2020
+      ],
+      "val_year": 2019,
+      "samples": {
+        "train": 1408,
+        "val": 731,
+        "test": 641
+      },
+      "best_epoch": 16,
+      "epochs_ran": 21,
+      "best_train_metrics": {
+        "loss": 0.36372005770152266,
+        "iou": 0.20372448861598969,
+        "dice": 0.33849021792411804,
+        "precision": 0.3515714406967163,
+        "recall": 0.3263475298881531,
+        "f1": 0.33849015831947327
+      },
+      "best_val_metrics": {
+        "loss": 0.40920674238257143,
+        "iou": 0.2480848878622055,
+        "dice": 0.39754489064216614,
+        "precision": 0.41365230083465576,
+        "recall": 0.382644921541214,
+        "f1": 0.39754486083984375
+      },
+      "runtime_minutes": 60.89636148391666,
+      "checkpoint_path": "/kaggle/working/m4_runs_proposed/proposed_104ch_fold1_best.pt"
+    },
+    {
+      "m4_fold": 2,
+      "loader_fold": 6,
+      "train_years": [
+        2019,
+        2020
+      ],
+      "val_year": 2018,
+      "samples": {
+        "train": 1413,
+        "val": 726,
+        "test": 641
+      },
+      "best_epoch": 9,
+      "epochs_ran": 14,
+      "best_train_metrics": {
+        "loss": 0.35866341072873537,
+        "iou": 0.20635485649108887,
+        "dice": 0.34211301803588867,
+        "precision": 0.3566698729991913,
+        "recall": 0.3286978304386139,
+        "f1": 0.3421129882335663
+      },
+      "best_val_metrics": {
+        "loss": 0.4318247146021893,
+        "iou": 0.24047628045082092,
+        "dice": 0.38771605491638184,
+        "precision": 0.34934547543525696,
+        "recall": 0.4355555474758148,
+        "f1": 0.38771599531173706
+      },
+      "runtime_minutes": 37.91272778033332,
+      "checkpoint_path": "/kaggle/working/m4_runs_proposed/proposed_104ch_fold2_best.pt"
+    }
+  ],
+  "validation_summary": {
+    "loss": {
+      "mean": 0.4340578976655264,
+      "std": 0.02126129824468501,
+      "values": [
+        0.46114223601181836,
+        0.40920674238257143,
+        0.4318247146021893
+      ]
+    },
+    "iou": {
+      "mean": 0.2218825320402781,
+      "std": 0.031827566065596814,
+      "values": [
+        0.17708642780780792,
+        0.2480848878622055,
+        0.24047628045082092
+      ]
+    },
+    "dice": {
+      "mean": 0.3620501259962718,
+      "std": 0.043432893303249134,
+      "values": [
+        0.30088943243026733,
+        0.39754489064216614,
+        0.38771605491638184
+      ]
+    },
+    "precision": {
+      "mean": 0.36153436700503033,
+      "std": 0.038553756929591024,
+      "values": [
+        0.3216053247451782,
+        0.41365230083465576,
+        0.34934547543525696
+      ]
+    },
+    "recall": {
+      "mean": 0.36696041623751324,
+      "std": 0.06338862377396977,
+      "values": [
+        0.28268077969551086,
+        0.382644921541214,
+        0.4355555474758148
+      ]
+    },
+    "f1": {
+      "mean": 0.362050066391627,
+      "std": 0.04343291541058962,
+      "values": [
+        0.30088934302330017,
+        0.39754486083984375,
+        0.38771599531173706
+      ]
+    }
+  }
+}
