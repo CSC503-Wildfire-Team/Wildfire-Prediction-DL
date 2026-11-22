@@ -34,6 +34,7 @@ from src.attention_unet.fit import fit  # noqa: E402
 from src.attention_unet.losses import HybridBCEDiceLoss  # noqa: E402
 from src.attention_unet.model import AttentionUNet  # noqa: E402
 from src.attention_unet.reproducibility import set_seed  # noqa: E402
+from src.attention_unet.res18_unet import Res18UNetBaseline  # noqa: E402
 
 
 METRICS = ("loss", "iou", "dice", "precision", "recall", "f1")
@@ -49,6 +50,8 @@ def parse_args():
                    help="Train 104ch WSTS+AEF instead of the 40ch control.")
     p.add_argument("--folds", nargs="+", type=int, choices=(0, 1, 2),
                    default=(0, 1, 2), help="M4 folds to run (default: 0 1 2).")
+    p.add_argument("--res18-baseline", action="store_true",
+               help="Train WSTS paper 40ch Res18 U-Net baseline instead of Attention U-Net.")
     p.add_argument("--config", default=str(ROOT / "configs" / "m4_rq1.json"))
     p.add_argument("--batch-size", type=int, default=None)
     p.add_argument("--num-workers", type=int, default=None)
@@ -115,6 +118,9 @@ def main():
     if patience is not None and patience < 1:
         raise SystemExit("patience must be >= 1 or None.")
 
+    if args.proposed and args.res18_baseline:
+        raise SystemExit("Choose either --proposed or --res18-baseline, not both.")
+
     use_aef = args.proposed
     if use_aef and not args.aef_dir:
         raise SystemExit("--proposed requires --aef-dir.")
@@ -123,7 +129,12 @@ def main():
         raise SystemExit("No GPU visible. Enable a Kaggle GPU accelerator and restart.")
 
     device = torch.device("cuda")
-    mode = "proposed_104ch" if use_aef else "wsts_control_40ch"
+    if args.res18_baseline:
+        mode = "res18_baseline_40ch"
+    elif use_aef:
+        mode = "proposed_104ch"
+    else:
+        mode = "wsts_control_40ch"
 
     manifest = ROOT / cfg["dataset"]["selected_fires_manifest"]
     if not manifest.is_file():
@@ -184,11 +195,14 @@ def main():
             f"(built in {time.perf_counter() - t_build:.1f}s)"
         )
 
-        model = AttentionUNet(
-            n_in_channels=n_in,
-            base_channels=cfg["model"]["base_channels"],
-            use_se=cfg["model"]["use_se"],
-        ).to(device)
+        if args.res18_baseline:
+            model = Res18UNetBaseline(n_in_channels=n_in).to(device)
+        else:
+            model = AttentionUNet(
+                n_in_channels=n_in,
+                base_channels=cfg["model"]["base_channels"],
+                use_se=cfg["model"]["use_se"],
+            ).to(device)
         n_params = sum(p.numel() for p in model.parameters())
 
         loss_fn = HybridBCEDiceLoss(bce_weight=tr_cfg["bce_weight"])
