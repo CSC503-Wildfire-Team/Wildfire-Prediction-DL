@@ -72,8 +72,6 @@ Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-
 \maketitle
 
 \section{Introduction}
-[Outline of the proposed model and a description of the evaluation methods.]
-
 The proposed method comprises a custom U-Net with gated-skip-connection spatial attention \cite{almakrami} and 
 Squeeze-Excitation-based channel attention \cite{SE2017} which uses the conventional environmental predictors 
 of the WildfireSpreadTS dataset \cite{gerard2023wildfirespreadts} augmented with AlphaEarth Foundations (AEF) 
@@ -86,37 +84,36 @@ importance of spatial and channel attention.
 \section{Research Questions}
 The proposed method is evaluated based on the following research questions:
 
-\textbf{RQ1. {\color{red}[MANDATORY]} Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth 
+\textbf{RQ1. Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth 
 Foundations embeddings improve next-day active-fire prediction performance?} Two multi-attention U-Net models are 
 compared; The geospatial representation-augmented model is benchmarked against a conventional environmental 
 input-only model. 
 The two respective models are benchmarked against the WildfireSpreadTS benchmark models 
 \cite{gerard2023wildfirespreadts} as all models are developed using WildfireSpreadTS. 
 
-\textbf{RQ2. {\color{red}[IDEAL]} Do channel-wise and spatial attention mechanisms improve next-day 
+\textbf{RQ2. Do channel-wise and spatial attention mechanisms improve next-day 
 active-fire prediction compared with a conventional U-Net?} Four architectures are instantiated and compared: a 
-conventional U-Net, a gated skip gated-skip-connection spatial attention U-Net \cite{almakrami}, a 
+conventional U-Net, a gated-skip-connection spatial attention U-Net \cite{almakrami}, a 
 Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-attention U-Net. Again, additional 
-comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}. 
-{\color{red} [Can shrink the above to just two instances: no attention vs. multi-attention given time constraints.]}
+comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}.
 
 
 \section{Methodology \& Experimental Design}
-[Explain why and how ablating isolates feature predictive power. 
+{\color{red} [Explain why and how ablating isolates feature predictive power. 
 Explain why baselines are used and justify each one.
-EXPLAIN AND JUSTIFY THE FOLLOWING:]
+EXPLAIN AND JUSTIFY THE FOLLOWING:]}
 \subsection{Dataset}
 \subsection{Preprocessing and Data Splits}
 \subsection{Models and Baselines}
 \subsection{Training and Evaluation Metrics}
 
 \section{Results}
-[PRESENT/REPORT DON'T ATTRIBUTE OR DISCUSS]
+{\color{red}[PRESENT/REPORT DON'T ATTRIBUTE OR DISCUSS. Add a nice looking table.]}
 \subsection{RQ1: Contribution of AEF Embeddings}
 \subsection{RQ2: Contribution of Attention Mechanisms}
 
 \section{Discussion}
-[Discuss results and draw conclusions.]
+{\color{red}[Discuss results and draw conclusions.]}
 
 
 \bibliographystyle{ACM-Reference-Format}
