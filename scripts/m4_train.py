@@ -202,6 +202,10 @@ def main():
                 n_in_channels=n_in,
                 base_channels=cfg["model"]["base_channels"],
                 use_se=cfg["model"]["use_se"],
+                use_spatial_attention=cfg["model"].get(
+                    "use_spatial_attention",
+                    True,
+                ),
             ).to(device)
         n_params = sum(p.numel() for p in model.parameters())
 

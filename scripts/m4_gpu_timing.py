@@ -119,7 +119,8 @@ def main():
 
     n_in = cfg["model"]["wsts_channels"] + (cfg["model"]["aef_channels"] if use_aef else 0)
     model = AttentionUNet(n_in_channels=n_in, base_channels=cfg["model"]["base_channels"],
-                          use_se=cfg["model"]["use_se"]).to(device)
+                          use_se=cfg["model"]["use_se"],
+                          use_spatial_attention=cfg["model"].get("use_spatial_attention", True)).to(device)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"model: {n_in} input channels, {n_params / 1e6:.1f}M parameters")
     loss_fn = HybridBCEDiceLoss(bce_weight=tr_cfg["bce_weight"])

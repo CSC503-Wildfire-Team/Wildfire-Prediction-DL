@@ -1,6 +1,7 @@
 import torch
 
 from src.attention_unet.model import (
+    AttentionGate,
     AttentionUNet,
     SEBlock,
 )
@@ -43,6 +44,17 @@ def test_attention_unet_output_shape_128():
         n_in_channels=40,
         base_channels=8,
         use_se=False,
+        use_spatial_attention=False,
+    )
+
+    assert all(
+        isinstance(decoder.attention, torch.nn.Identity)
+        for decoder in (
+            model.dec1,
+            model.dec2,
+            model.dec3,
+            model.dec4,
+        )
     )
 
     x = torch.randn(
@@ -59,6 +71,23 @@ def test_attention_unet_output_shape_128():
         1,
         128,
         128,
+    )
+
+
+def test_attention_unet_spatial_attention_enabled_by_default():
+    model = AttentionUNet(
+        n_in_channels=5,
+        base_channels=8,
+    )
+
+    assert all(
+        isinstance(decoder.attention, AttentionGate)
+        for decoder in (
+            model.dec1,
+            model.dec2,
+            model.dec3,
+            model.dec4,
+        )
     )
 
 

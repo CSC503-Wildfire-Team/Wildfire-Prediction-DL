@@ -15,6 +15,7 @@
     "name": "attention_unet_se",
     "base_channels": 64,
     "use_se": true,
+    "use_spatial_attention": true,
     "wsts_channels": 40,
     "aef_channels": 64
   },

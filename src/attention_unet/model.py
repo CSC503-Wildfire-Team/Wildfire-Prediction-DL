@@ -200,6 +200,7 @@ class DecoderBlock(nn.Module):
         in_channels: int,
         skip_channels: int,
         out_channels: int,
+        use_spatial_attention: bool = True,
     ) -> None:
         super().__init__()
 
@@ -210,9 +211,13 @@ class DecoderBlock(nn.Module):
             stride=2,
         )
 
-        self.attention = AttentionGate(
-            skip_channels=skip_channels,
-            gate_channels=out_channels,
+        self.attention = (
+            AttentionGate(
+                skip_channels=skip_channels,
+                gate_channels=out_channels,
+            )
+            if use_spatial_attention
+            else nn.Identity()
         )
 
         self.conv = DoubleConv(
@@ -228,10 +233,13 @@ class DecoderBlock(nn.Module):
 
         x = self.up(x)
 
-        gated_skip = self.attention(
-            skip=skip,
-            gate=x,
-        )
+        if isinstance(self.attention, AttentionGate):
+            gated_skip = self.attention(
+                skip=skip,
+                gate=x,
+            )
+        else:
+            gated_skip = self.attention(skip)
 
         x = torch.cat(
             [gated_skip, x],
@@ -244,7 +252,7 @@ class DecoderBlock(nn.Module):
 class AttentionUNet(nn.Module):
     """
     Four-level Attention U-Net with optional
-    Squeeze-and-Excitation channel attention.
+    Squeeze-and-Excitation channel and gated spatial attention.
 
     Default architecture:
         Encoder:
@@ -272,6 +280,7 @@ class AttentionUNet(nn.Module):
         apply_sigmoid: bool = True,
         use_se: bool = True,
         se_reduction: int = 16,
+        use_spatial_attention: bool = True,
     ) -> None:
         super().__init__()
 
@@ -377,24 +386,28 @@ class AttentionUNet(nn.Module):
             bridge_channels,
             c4,
             c4,
+            use_spatial_attention=use_spatial_attention,
         )
 
         self.dec3 = DecoderBlock(
             c4,
             c3,
             c3,
+            use_spatial_attention=use_spatial_attention,
         )
 
         self.dec2 = DecoderBlock(
             c3,
             c2,
             c2,
+            use_spatial_attention=use_spatial_attention,
         )
 
         self.dec1 = DecoderBlock(
             c2,
             c1,
             c1,
+            use_spatial_attention=use_spatial_attention,
         )
 
         # Pixel-wise binary prediction.

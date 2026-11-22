@@ -376,11 +376,21 @@ def main():
                 "Pull the latest repository version."
             )
 
+        if "use_spatial_attention" not in params:
+            raise RuntimeError(
+                "AttentionUNet does not support use_spatial_attention. "
+                "Pull the latest repository version."
+            )
+
         # Intentionally small for smoke testing only.
         model = AttentionUNet(
             n_in_channels=expected_channels,
             base_channels=args.base_channels,
             use_se=config["model"]["use_se"],
+            use_spatial_attention=config["model"].get(
+                "use_spatial_attention",
+                True,
+            ),
         ).to(device)
 
     loss_fn = HybridBCEDiceLoss(
