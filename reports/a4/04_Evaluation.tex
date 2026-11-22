@@ -81,8 +81,7 @@ embeddings \cite{brown} to predict the active-fire mask at day $t+1$ given the i
 
 The efficacy of the proposed method is evaluated through an empirical approach; feature ablation isolates 
 the predictive performance increase yielded by the AEF embeddings, while architecture ablation isolates the 
-importance of spatial and channel attention, respectively. {\color{red}[Hotswap for inference threshold given 
-time constraints].}
+importance of spatial and channel attention.
 
 \section{Research Questions}
 The proposed method is evaluated based on the following research questions:
@@ -100,9 +99,6 @@ conventional U-Net, a gated skip gated-skip-connection spatial attention U-Net \
 Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-attention U-Net. Again, additional 
 comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}. 
 {\color{red} [Can shrink the above to just two instances: no attention vs. multi-attention given time constraints.]}
-
-\textbf{RQ3. {\color{red}[STRONG FALLBACK]} How sensitive is the proposed WSTS+AEF 
-model to the inference threshold?} {\color{red} [Can pivot to this if need be.]}
 
 
 \section{Methodology \& Experimental Design}
