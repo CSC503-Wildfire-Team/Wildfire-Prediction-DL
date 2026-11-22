@@ -21,6 +21,6 @@ class Res18UNetBaseline(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.ndim == 5:
-            x = x.flatten(start_dim=1, end_dim=2)
-        return self.model(x)
+      if x.ndim == 5:
+        x = x.flatten(start_dim=1, end_dim=2)
+      return torch.sigmoid(self.model(x))
