@@ -1,0 +1,179 @@
+{
+  "mode": "proposed_104ch",
+  "started_at_utc": "2026-11-22T22:40:27.400681+00:00",
+  "finished_at_utc": "2026-11-23T00:32:09.687012+00:00",
+  "config_path": "configs/m4_rq2_spat.json",
+  "manifest": "/kaggle/working/Wildfire-Prediction-DL/configs/m4_selected_fires.csv",
+  "folds_requested": [
+    0,
+    1,
+    2
+  ],
+  "folds_completed": [
+    0,
+    1,
+    2
+  ],
+  "test_evaluated": false,
+  "total_runtime_minutes": 111.70477172566666,
+  "fold_results": [
+    {
+      "m4_fold": 0,
+      "loader_fold": 0,
+      "train_years": [
+        2018,
+        2019
+      ],
+      "val_year": 2020,
+      "samples": {
+        "train": 1457,
+        "val": 682,
+        "test": 641
+      },
+      "best_epoch": 8,
+      "epochs_ran": 13,
+      "best_train_metrics": {
+        "loss": 0.344470909096725,
+        "iou": 0.2391907125711441,
+        "dice": 0.3860434293746948,
+        "precision": 0.38980647921562195,
+        "recall": 0.382352352142334,
+        "f1": 0.38604336977005005
+      },
+      "best_val_metrics": {
+        "loss": 0.4585349979288767,
+        "iou": 0.16909365355968475,
+        "dice": 0.28927305340766907,
+        "precision": 0.28013554215431213,
+        "recall": 0.2990267872810364,
+        "f1": 0.2892729938030243
+      },
+      "runtime_minutes": 39.867853535966674,
+      "checkpoint_path": "/kaggle/working/rq2_spatial_only_104ch/proposed_104ch_fold0_best.pt"
+    },
+    {
+      "m4_fold": 1,
+      "loader_fold": 2,
+      "train_years": [
+        2018,
+        2020
+      ],
+      "val_year": 2019,
+      "samples": {
+        "train": 1408,
+        "val": 731,
+        "test": 641
+      },
+      "best_epoch": 9,
+      "epochs_ran": 14,
+      "best_train_metrics": {
+        "loss": 0.36553567749532784,
+        "iou": 0.20017413794994354,
+        "dice": 0.33357515931129456,
+        "precision": 0.3208904564380646,
+        "recall": 0.34730398654937744,
+        "f1": 0.33357512950897217
+      },
+      "best_val_metrics": {
+        "loss": 0.4165844949097379,
+        "iou": 0.24454444646835327,
+        "dice": 0.3929862678050995,
+        "precision": 0.3982931673526764,
+        "recall": 0.38781893253326416,
+        "f1": 0.3929862380027771
+      },
+      "runtime_minutes": 43.21651102176667,
+      "checkpoint_path": "/kaggle/working/rq2_spatial_only_104ch/proposed_104ch_fold1_best.pt"
+    },
+    {
+      "m4_fold": 2,
+      "loader_fold": 6,
+      "train_years": [
+        2019,
+        2020
+      ],
+      "val_year": 2018,
+      "samples": {
+        "train": 1413,
+        "val": 726,
+        "test": 641
+      },
+      "best_epoch": 5,
+      "epochs_ran": 10,
+      "best_train_metrics": {
+        "loss": 0.3518949457709872,
+        "iou": 0.20053325593471527,
+        "dice": 0.33407363295555115,
+        "precision": 0.32091137766838074,
+        "recall": 0.3483617901802063,
+        "f1": 0.33407360315322876
+      },
+      "best_val_metrics": {
+        "loss": 0.44036412255494717,
+        "iou": 0.23935700953006744,
+        "dice": 0.3862600028514862,
+        "precision": 0.37520632147789,
+        "recall": 0.39798471331596375,
+        "f1": 0.38625994324684143
+      },
+      "runtime_minutes": 28.592422481616662,
+      "checkpoint_path": "/kaggle/working/rq2_spatial_only_104ch/proposed_104ch_fold2_best.pt"
+    }
+  ],
+  "validation_summary": {
+    "loss": {
+      "mean": 0.4384945384645206,
+      "std": 0.017177168652857684,
+      "values": [
+        0.4585349979288767,
+        0.4165844949097379,
+        0.44036412255494717
+      ]
+    },
+    "iou": {
+      "mean": 0.2176650365193685,
+      "std": 0.034410384163886386,
+      "values": [
+        0.16909365355968475,
+        0.24454444646835327,
+        0.23935700953006744
+      ]
+    },
+    "dice": {
+      "mean": 0.35617310802141827,
+      "std": 0.04738511468487771,
+      "values": [
+        0.28927305340766907,
+        0.3929862678050995,
+        0.3862600028514862
+      ]
+    },
+    "precision": {
+      "mean": 0.35121167699495953,
+      "std": 0.05113455010085941,
+      "values": [
+        0.28013554215431213,
+        0.3982931673526764,
+        0.37520632147789
+      ]
+    },
+    "recall": {
+      "mean": 0.36161014437675476,
+      "std": 0.04444729623391528,
+      "values": [
+        0.2990267872810364,
+        0.38781893253326416,
+        0.39798471331596375
+      ]
+    },
+    "f1": {
+      "mean": 0.3561730583508809,
+      "std": 0.047385122402616844,
+      "values": [
+        0.2892729938030243,
+        0.3929862380027771,
+        0.38625994324684143
+      ]
+    }
+  }
+}
