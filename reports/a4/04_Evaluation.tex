@@ -103,8 +103,37 @@ comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2
 Explain why baselines are used and justify each one.
 EXPLAIN AND JUSTIFY THE FOLLOWING:]}
 \subsection{Dataset}
-{\color{red}[Justify WSTS and AEF use in experiment and describe each, including their stats. I justified the underlying \textbf{data} in M3. 
-We only need to say why we picked the \textbf{dataset}]}
+\textbf{WildfireSpreadTS.} All models are trained and evaluated on WildfireSpreadTS
+(WSTS)~\cite{gerard2023wildfirespreadts}. WSTS was selected for five reasons. (i) \emph{Relevance:} its
+central task is exactly the one studied here, predicting the next day's binarized VIIRS active-fire map
+from the observations available on the current day. (ii) \emph{Label availability:} every daily image
+carries the active-fire band from which the next-day ground-truth mask is derived, so no additional
+labelling is required. (iii) \emph{Comparability:} WSTS ships published benchmark models and a
+year-based cross-validation protocol, so our models can be placed alongside existing results rather than
+evaluated in isolation. (iv) \emph{Accessibility:} the data are openly available on Zenodo under
+CC-BY-4.0 and the loader code under MIT, so the experiments can be reproduced by others.
+(v) \emph{Georeferencing:} each fire event is delivered as GeoTIFFs with a coordinate reference system
+and affine transform, which is a precondition for this study, since the AEF embeddings must be aligned
+pixel-for-pixel with the WSTS grid.
+
+The full dataset contains 13,607 daily images across 607 fire events larger than 1,000\,ha in the
+western United States from January 2018 to October 2021, each covering a $1^\circ\times1^\circ$ area
+around the fire at 375\,m resolution~\cite{gerard2023wildfirespreadts}. Each image has 23 channels:
+VIIRS reflectance (M11, I2, I1), NDVI and EVI2, GRIDMET weather (precipitation, wind speed and
+direction, minimum and maximum temperature, specific humidity, energy release component, PDSI), GFS
+weather forecasts, topography (slope, aspect, elevation), MODIS land cover, and the active-fire
+band~\cite{gerard2023wildfirespreadts}.
+
+\textbf{AlphaEarth Foundations embeddings.} The embedding features are taken from the AlphaEarth
+Foundations Satellite Embedding dataset~\cite{brown}, distributed through Google Earth Engine. It was
+chosen because it is, to our knowledge, the only openly released annual, global, 10\,m geospatial
+foundation-model product: every pixel is a unit-length 64-dimensional vector summarising a year of
+multi-sensor observations, with Landsat, Sentinel-1 and Sentinel-2 among the inputs~\cite{brown}.
+
+Ingesting AEF at 10\,m for all 607 events exceeded the Earth Engine compute quota available to the
+project, so all experiments use a fixed subset of 40 fire events per year (160 events), taken as the
+first 40 events of each year in WSTS event-ID order. The subset was fixed before any model was trained
+and is shared by every model and fold, so all comparisons use identical fires and day pairs.
 \subsection{Preprocessing and Data Splits}
 {\color{red}[Describe and justify our preprocessing citing \cite{gerard2023wildfirespreadts}, \cite{brown} and my medoid algorithm from M3.]}
 \subsection{Models and Baselines}
