@@ -1,0 +1,179 @@
+{
+  "mode": "proposed_104ch",
+  "started_at_utc": "2026-11-23T07:00:41.503989+00:00",
+  "finished_at_utc": "2026-11-23T08:42:55.699303+00:00",
+  "config_path": "configs/m4_rq2_none.json",
+  "manifest": "/kaggle/working/Wildfire-Prediction-DL/configs/m4_selected_fires.csv",
+  "folds_requested": [
+    0,
+    1,
+    2
+  ],
+  "folds_completed": [
+    0,
+    1,
+    2
+  ],
+  "test_evaluated": false,
+  "total_runtime_minutes": 102.23658817523334,
+  "fold_results": [
+    {
+      "m4_fold": 0,
+      "loader_fold": 0,
+      "train_years": [
+        2018,
+        2019
+      ],
+      "val_year": 2020,
+      "samples": {
+        "train": 1457,
+        "val": 682,
+        "test": 641
+      },
+      "best_epoch": 3,
+      "epochs_ran": 8,
+      "best_train_metrics": {
+        "loss": 0.3654324688891802,
+        "iou": 0.213712677359581,
+        "dice": 0.35216355323791504,
+        "precision": 0.32592692971229553,
+        "recall": 0.3829939663410187,
+        "f1": 0.35216349363327026
+      },
+      "best_val_metrics": {
+        "loss": 0.4599199660362736,
+        "iou": 0.1661604791879654,
+        "dice": 0.2849701941013336,
+        "precision": 0.2550589442253113,
+        "recall": 0.32282891869544983,
+        "f1": 0.28497010469436646
+      },
+      "runtime_minutes": 26.071264451516665,
+      "checkpoint_path": "/kaggle/working/m4_final_2021/runs/no_attention/proposed_104ch_fold0_best.pt"
+    },
+    {
+      "m4_fold": 1,
+      "loader_fold": 2,
+      "train_years": [
+        2018,
+        2020
+      ],
+      "val_year": 2019,
+      "samples": {
+        "train": 1408,
+        "val": 731,
+        "test": 641
+      },
+      "best_epoch": 6,
+      "epochs_ran": 11,
+      "best_train_metrics": {
+        "loss": 0.37694474546746776,
+        "iou": 0.18944448232650757,
+        "dice": 0.31854280829429626,
+        "precision": 0.2823339104652405,
+        "recall": 0.36540549993515015,
+        "f1": 0.3185427486896515
+      },
+      "best_val_metrics": {
+        "loss": 0.4090610858353642,
+        "iou": 0.23317059874534607,
+        "dice": 0.3781643807888031,
+        "precision": 0.3377288579940796,
+        "recall": 0.4295993745326996,
+        "f1": 0.3781643211841583
+      },
+      "runtime_minutes": 32.39996861944999,
+      "checkpoint_path": "/kaggle/working/m4_final_2021/runs/no_attention/proposed_104ch_fold1_best.pt"
+    },
+    {
+      "m4_fold": 2,
+      "loader_fold": 6,
+      "train_years": [
+        2019,
+        2020
+      ],
+      "val_year": 2018,
+      "samples": {
+        "train": 1413,
+        "val": 726,
+        "test": 641
+      },
+      "best_epoch": 11,
+      "epochs_ran": 16,
+      "best_train_metrics": {
+        "loss": 0.3621259073542941,
+        "iou": 0.20757724344730377,
+        "dice": 0.34379124641418457,
+        "precision": 0.3495291769504547,
+        "recall": 0.3382386565208435,
+        "f1": 0.3437911570072174
+      },
+      "best_val_metrics": {
+        "loss": 0.4350824403697137,
+        "iou": 0.23637042939662933,
+        "dice": 0.38236182928085327,
+        "precision": 0.3904288411140442,
+        "recall": 0.3746214210987091,
+        "f1": 0.3823617398738861
+      },
+      "runtime_minutes": 43.09053238684999,
+      "checkpoint_path": "/kaggle/working/m4_final_2021/runs/no_attention/proposed_104ch_fold2_best.pt"
+    }
+  ],
+  "validation_summary": {
+    "loss": {
+      "mean": 0.4346878307471172,
+      "std": 0.0207649257385027,
+      "values": [
+        0.4599199660362736,
+        0.4090610858353642,
+        0.4350824403697137
+      ]
+    },
+    "iou": {
+      "mean": 0.2119005024433136,
+      "std": 0.03236945087165849,
+      "values": [
+        0.1661604791879654,
+        0.23317059874534607,
+        0.23637042939662933
+      ]
+    },
+    "dice": {
+      "mean": 0.34849880139033,
+      "std": 0.04495418112938622,
+      "values": [
+        0.2849701941013336,
+        0.3781643807888031,
+        0.38236182928085327
+      ]
+    },
+    "precision": {
+      "mean": 0.327738881111145,
+      "std": 0.05571416321731079,
+      "values": [
+        0.2550589442253113,
+        0.3377288579940796,
+        0.3904288411140442
+      ]
+    },
+    "recall": {
+      "mean": 0.3756832381089528,
+      "std": 0.0435953220078023,
+      "values": [
+        0.32282891869544983,
+        0.4295993745326996,
+        0.3746214210987091
+      ]
+    },
+    "f1": {
+      "mean": 0.3484987219174703,
+      "std": 0.044954187684975125,
+      "values": [
+        0.28497010469436646,
+        0.3781643211841583,
+        0.3823617398738861
+      ]
+    }
+  }
+}
