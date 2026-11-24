@@ -132,9 +132,9 @@ a spatial-attention U-Net, a channel-attention U-Net, and the combined multi-att
 individual and combined contributions of spatial and channel attention for processing the augmented feature stack.
 
 \subsection{Experimental Setup}
-Experiments use all valid consecutive-day pairs from 160 selected fire events (40 per year). Three year-based development folds 
-are used: 2018--2019 training with 2020 validation; 2018 and 2020 training with 2019 validation; and 
-2019--2020 training with 2018 validation. The 2021 events are reserved as a held-out test set and 
+Experiments use all valid consecutive-day pairs from 160 selected fire events (40 per year). The 160 WSTS-event subset was used 
+due to AEF processing compute constraints. Three year-based development folds are used: 2018--2019 training with 2020 validation; 
+2018 and 2020 training with 2019 validation; and 2019--2020 training with 2018 validation. The 2021 events are reserved as a held-out test set and 
 consequently excluded from development and model selection.
 
 All models use the same training procedure: AdamW optimization with a learning rate of $10^{-3}$, batch size 8, and a maximum of 
