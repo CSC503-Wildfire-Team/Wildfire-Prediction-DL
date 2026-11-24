@@ -62,22 +62,22 @@ for Next-Day Wildfire Spread Prediction}
 \begin{abstract}
 This evaluation establishes the efficacy of the proposed geospatial foundation model 
 embedding-augmented multi-attention U-Net for next-day wildfire spread prediction. An experimental
-approach is used to benchmark the proposed method against existing methods and isolate the key factors 
-that determine performance. {\color{red}[KEY FINDINGS HERE]}. 
+approach is used to benchmark the proposed method against existing approaches and isolate the key factors 
+that determine performance.
 
 Project repository: https://github.com/CSC503-Wildfire-Team/Wildfire-Prediction-DL
 \end{abstract}
 
-\keywords{wildfire spread prediction, geospatial foundation models, AlphaEarth embeddings, remote sensing, semantic segmentation}
+\keywords{wildfire spread prediction, geospatial foundation models, AlphaEarth embeddings, WildfireSpreadTS, multi-attention U-Net}
 \maketitle
 
 \section{Introduction}
-The proposed method comprises a custom U-Net with gated-skip-connection spatial attention \cite{almakrami} and 
-Squeeze-Excitation-based channel attention \cite{SE2017} which uses the conventional environmental predictors 
-of the WildfireSpreadTS dataset \cite{gerard2023wildfirespreadts} augmented with AlphaEarth Foundations (AEF) 
+The proposed method comprises a custom U-Net with gated-skip-connection-based spatial attention \cite{almakrami} and 
+Squeeze-Excitation-based channel attention \cite{SE2017}. The multi-attention U-Net uses the conventional environmental 
+predictors of the WildfireSpreadTS dataset \cite{gerard2023wildfirespreadts} augmented with AlphaEarth Foundations (AEF) 
 embeddings \cite{brown} to predict the active-fire mask at day $t+1$ given the information available at day $t$.
 
-The efficacy of the proposed method is evaluated through an empirical approach; feature ablation isolates 
+The efficacy of the proposed method is evaluated using an empirical approach; feature ablation isolates 
 the predictive performance increase yielded by the AEF embeddings, while architecture ablation isolates the 
 importance of spatial and channel attention.
 
@@ -87,15 +87,12 @@ The proposed method is evaluated based on the following research questions:
 \textbf{RQ1. Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth 
 Foundations embeddings improve next-day active-fire prediction performance?} Two multi-attention U-Net models are 
 compared; The geospatial representation-augmented model is benchmarked against a conventional environmental 
-input-only model. 
-The two respective models are benchmarked against the WildfireSpreadTS benchmark models 
-\cite{gerard2023wildfirespreadts} as all models are developed using WildfireSpreadTS. 
+input-only model. The two respective models are then referenced against additional architectures.
 
 \textbf{RQ2. Do channel-wise and spatial attention mechanisms improve next-day 
 active-fire prediction compared with a conventional U-Net?} Four architectures are instantiated and compared: a 
-conventional U-Net, a gated-skip-connection spatial attention U-Net \cite{almakrami}, a 
-Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-attention U-Net. Again, additional 
-comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}.
+conventional U-Net, a gated-skip-connection-based spatial attention U-Net \cite{almakrami}, a 
+Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and the proposed multi-attention U-Net.
 
 \section{Methodology}
 \subsection{Dataset}
@@ -109,7 +106,7 @@ land cover, and active-fire detections. The prediction target is the following
 day's binarized VIIRS (Visible Infrared Imaging Radiometer) active-fire map. Crucially, its GeoTIFFs
 are georeferenced, allowing for pixel-wise alignment with AEF embeddings.
 
-\textbf{AlphaEarth Foundations (AEF)} \cite{brown} provides annual, global, $10$ m
+\textbf{AlphaEarth Foundations (AEF)} provides annual, global, $10$ m
 satellite embeddings: unit-length 64-dimensional vectors summarizing
 multi-sensor environmental observations at each pixel \cite{brown}. It is hypothesized these embeddings augment
 WSTS's conventional environmental predictors with learned environmental context.
@@ -127,24 +124,25 @@ input.
 Feature and architectural contributions are evaluated using ablations. For the feature ablation, the proposed 
 multi-attention U-Net is trained with either the 40-channel WSTS predictors alone or the 104-channel WSTS+AEF input. 
 Comparing these variants isolates the contribution of AEF embeddings while holding the architecture constant.
-For architectural ablation, four variants are evaluated on the 104-channel WSTS+AEF input: a conventional U-Net (no attention), 
-a spatial-attention U-Net, a channel-attention U-Net, and the combined multi-attention U-Net. These comparisons assess the 
-individual and combined contributions of spatial and channel attention for processing the augmented feature stack.
+For architectural ablation, four variants are evaluated on the 104-channel WSTS+AEF input: a 
+conventional U-Net, a gated-skip-connection-based spatial attention U-Net, a 
+Squeeze-Excitation-based channel attention U-Net, and the proposed multi-attention U-Net. These comparisons 
+assess the individual and combined contributions of spatial and channel attention for processing the augmented feature stack.
 
 \subsection{Experimental Setup}
 Experiments use all valid consecutive-day pairs from 160 selected fire events (40 per year). The 160 WSTS-event subset was used 
 due to AEF processing compute constraints. Three year-based development folds are used: 2018--2019 training with 2020 validation; 
-2018 and 2020 training with 2019 validation; and 2019--2020 training with 2018 validation. The 2021 events are reserved as a held-out test set and 
-consequently excluded from development and model selection.
+2018 and 2020 training with 2019 validation; and 2019--2020 training with 2018 validation. The 2021 events were reserved as a held-out 
+test set.
 
 All models use the same training procedure: AdamW optimization with a learning rate of $10^{-3}$, batch size 8, and a maximum of 
 30 epochs. Training uses random $128\times128$ crops, with early stopping after five epochs without validation improvement. 
-The hybrid loss combines binary cross-entropy and Dice loss with equal weighting by equation 14 from Milestone 3.
+The hybrid loss combines binary cross-entropy and Dice loss by equation 14 from Milestone 3.
 
 Randomness is controlled across Python, NumPy, PyTorch, and CUDA. Performance is evaluated using the following metrics computed 
 over valid pixels at a 0.5 threshold; IoU: overlap between predicted and true fire regions. Dice: region overlap giving more 
-weight to true positives. Precision: fraction of predicted fire pixels that are correct. Precision: fraction of predicted fire 
-pixels that are correct. F1: harmonic mean of precision and recall.
+weight to true positives. Precision: fraction of predicted fire pixels that are correct. Recall: fraction of actual fire pixels that are correctly predicted. 
+F1: harmonic mean of precision and recall.
 
 \section{Results}
 Table~\ref{tab:results} reports mean $\pm$ standard deviation across the three year-based
@@ -205,18 +203,35 @@ test set was accessed. Combined spatial and channel attention obtained the highe
 The combined configuration was therefore fixed before evaluation on the held-out 2021 test set.
 
 \section{Discussion}
-For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
-The WSTS-only control is the cleanest feature ablation because it retains the same multi-attention
+{\color{red}For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
+ The WSTS-only control is the cleanest feature ablation because it retains the same multi-attention
 architecture and training protocol while removing only the 64 AEF channels. Its comparison with the
 proposed model therefore attributes the observed $0.0032$ IoU and $0.0041$ Dice/F1 gains to the
 additional embedding features under the evaluated setting. The larger recall increase ($+0.0238$),
 accompanied by a small precision decrease ($-0.0079$), indicates that the AEF-augmented model identifies
 more true next-day fire pixels at the cost of additional false positives. Since the gains are modest and
 the experiments are restricted to a fixed 160-fire subset and one random seed, they should not be
-interpreted as evidence of a large or statistically significant improvement.
+interpreted as evidence of a large or statistically significant improvement.}
 
-{\color{red}[RQ2 attribution and discussion to be completed.]}
+{\color{green} For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
+Feature ablation attributes the observed $0.0032$ IoU and $0.0041$ Dice/F1 gains to the
+additional embedding features in the given experiment. The larger recall increase ($+0.0238$),
+accompanied by a small precision decrease ($-0.0079$), suggests that the AEF-augmented model identifies
+more true next-day fire pixels at the cost of additional false positives. Since the gains are modest and
+the experiments are restricted to a fixed 160-fire subset and one random seed, they should not be
+interpreted as evidence of a large or statistically significant improvement.}
 
+For RQ2, all three attention-based configurations achieved higher mean development cross-validation IoU than the conventional 
+U-Net. Spatial attention-only and channel attention-only yielded average IoU gains of 0.0058 and 0.0053, respectively, while 
+combined spatial and channel attention yielded an average IoU gain of 0.0100 relative to the no attention configuration. These results suggest 
+both mechanisms enhance feature selection, with their combination providing the best performance in the
+given experiment. However, there are relatively large standard deviations
+across folds. Furthermore, these results do not establish statistical significance or a synergistic interaction
+between the mechanisms.
+
+Overall, these findings provide preliminary evidence that geospatial foundation model embeddings and attention mechanisms can 
+improve static, next-day wildfire spread prediction. Future work should expand the evaluation to more fire
+events, incorporate multiple random seeds, and investigate alternative feature-fusion strategies. 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}
