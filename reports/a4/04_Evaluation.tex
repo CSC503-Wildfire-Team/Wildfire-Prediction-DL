@@ -78,11 +78,11 @@ predictors of the WildfireSpreadTS dataset \cite{gerard2023wildfirespreadts} aug
 embeddings \cite{brown} to predict the active-fire mask at day $t+1$ given the information available at day $t$.
 
 The efficacy of the proposed method is evaluated using an empirical approach; feature ablation isolates 
-the predictive performance increase yielded by the AEF embeddings, while architecture ablation isolates the 
+the predictive performance increase yielded by the AEF embeddings, while architectural ablation isolates the 
 importance of spatial and channel attention.
 
 \section{Research Questions}
-The proposed method is evaluated based on the following research questions:
+The proposed method is evaluated using the following research questions:
 
 \textbf{RQ1. Does augmenting WildfireSpreadTS environmental predictors with AlphaEarth 
 Foundations embeddings improve next-day active-fire prediction performance?} Two multi-attention U-Net models are 
@@ -108,13 +108,13 @@ are georeferenced, allowing for pixel-wise alignment with AEF embeddings.
 
 \textbf{AlphaEarth Foundations (AEF)} provides annual, global, $10$ m
 satellite embeddings: unit-length 64-dimensional vectors summarizing
-multi-sensor environmental observations at each pixel \cite{brown}. It is hypothesized these embeddings augment
+multi-sensor environmental observations at each pixel \cite{brown}. It is hypothesized that these embeddings augment
 WSTS's conventional environmental predictors with learned environmental context.
 
 \subsection{Preprocessing}
 WSTS inputs are processed using the dataset's published preprocessing pipeline, yielding 40 feature channels from the 
 original 23-channel dataset \cite{gerard2023wildfirespreadts}. The AEF embeddings and WSTS events are 
-georectified and the annual embeddings from year $y - 1$ are used for a fire occurring in year $y$ to prevent data leakage.     
+pixel-wise-aligned and the annual embeddings from year $y - 1$ are used for a fire occurring in year $y$ to prevent data leakage.     
 Valid 10-m embedding vectors within each 375-m cell are aggregated using the exact cosine medoid defined in
 Milestone 3, equation 2. Continuous predictors are standardized, while categorical land-cover and active-fire channels retain 
 their encoded values. Finally, the 40 environmental and 64 embedding channels are concatenated to form the 104-channel model 
@@ -146,10 +146,10 @@ F1: harmonic mean of precision and recall.
 
 \section{Results}
 Table~\ref{tab:results} reports mean $\pm$ standard deviation across the three year-based
-fold-trained models. RQ1 uses the untouched 2021 final test set, whereas RQ2 reports development
+fold-trained models. RQ1 uses the held-out 2021 test set, whereas RQ2 reports development
 cross-validation used for attention selection.
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{RQ1 final-test and RQ2 development-CV results.}
 \label{tab:results}
@@ -176,7 +176,7 @@ $\mathbf{0.3801}{\pm}0.0047$ &
 $0.3382{\pm}0.0202$ &
 $\mathbf{0.4371}{\pm}0.0241$ \\
 \midrule
-\multicolumn{5}{l}{\textit{RQ2: development CV (IoU)}}\\
+\multicolumn{5}{l}{\textit{RQ2: development-CV (IoU)}}\\
 No attention &
 $0.2119{\pm}0.0324$ & & & \\
 Spatial only &
@@ -190,7 +190,7 @@ $\mathbf{0.2219}{\pm}0.0318$ & & & \\
 \end{table}
 
 \subsection{RQ1: Contribution of AEF Embeddings}
-On the untouched 2021 test set, the proposed 104-channel WSTS+AEF model achieved the highest mean
+On the held-out 2021 test set, the proposed 104-channel WSTS+AEF model achieved the highest mean
 IoU ($0.2347$) and Dice/F1 ($0.3801$). Relative to the otherwise matched 40-channel WSTS control,
 AEF augmentation increased IoU by $0.0032$ (1.38\%) and Dice/F1 by $0.0041$ (1.09\%).
 Recall increased from $0.4133$ to $0.4371$, while precision decreased from $0.3461$ to $0.3382$.
@@ -203,29 +203,20 @@ test set was accessed. Combined spatial and channel attention obtained the highe
 The combined configuration was therefore fixed before evaluation on the held-out 2021 test set.
 
 \section{Discussion}
-{\color{red}For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
- The WSTS-only control is the cleanest feature ablation because it retains the same multi-attention
-architecture and training protocol while removing only the 64 AEF channels. Its comparison with the
-proposed model therefore attributes the observed $0.0032$ IoU and $0.0041$ Dice/F1 gains to the
-additional embedding features under the evaluated setting. The larger recall increase ($+0.0238$),
-accompanied by a small precision decrease ($-0.0079$), indicates that the AEF-augmented model identifies
-more true next-day fire pixels at the cost of additional false positives. Since the gains are modest and
-the experiments are restricted to a fixed 160-fire subset and one random seed, they should not be
-interpreted as evidence of a large or statistically significant improvement.}
-
-{\color{green} For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
+For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
 Feature ablation attributes the observed $0.0032$ IoU and $0.0041$ Dice/F1 gains to the
-additional embedding features in the given experiment. The larger recall increase ($+0.0238$),
+additional embedding features in this experiment. The larger recall increase ($+0.0238$),
 accompanied by a small precision decrease ($-0.0079$), suggests that the AEF-augmented model identifies
 more true next-day fire pixels at the cost of additional false positives. Since the gains are modest and
 the experiments are restricted to a fixed 160-fire subset and one random seed, they should not be
-interpreted as evidence of a large or statistically significant improvement.}
+interpreted as evidence of a large or statistically significant improvement.
 
-For RQ2, all three attention-based configurations achieved higher mean development cross-validation IoU than the conventional 
+For RQ2, all three attention configurations achieved higher mean development cross-validation IoU than the conventional 
 U-Net. Spatial attention-only and channel attention-only yielded average IoU gains of 0.0058 and 0.0053, respectively, while 
-combined spatial and channel attention yielded an average IoU gain of 0.0100 relative to the no attention configuration. These results suggest 
-both mechanisms enhance feature selection, with their combination providing the best performance in the
-given experiment. However, there are relatively large standard deviations
+combined spatial and channel attention yielded an average IoU gain of 0.0100 relative to the no attention configuration. These 
+results suggest 
+both mechanisms enhance feature selection, with their combination providing the best performance in this experiment. However, 
+there are relatively large standard deviations
 across folds. Furthermore, these results do not establish statistical significance or a synergistic interaction
 between the mechanisms.
 
