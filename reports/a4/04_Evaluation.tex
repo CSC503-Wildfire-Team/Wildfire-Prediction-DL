@@ -97,11 +97,7 @@ conventional U-Net, a gated-skip-connection spatial attention U-Net \cite{almakr
 Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-attention U-Net. Again, additional 
 comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}.
 
-
 \section{Methodology}
-{\color{red} [Explain why and how ablating isolates feature predictive power. 
-Explain why baselines are used and justify each one.
-EXPLAIN AND JUSTIFY THE FOLLOWING:]}
 \subsection{Dataset}
 \textbf{WildfireSpreadTS (WSTS)} \cite{gerard2023wildfirespreadts} was selected due to its 
 task relevance, public availability, and published benchmark models. WSTS is a dataset of
@@ -112,7 +108,6 @@ representing satellite reflectance and vegetation indices, weather, topography,
 land cover, and active-fire detections. The prediction target is the following
 day's binarized VIIRS (Visible Infrared Imaging Radiometer) active-fire map. Crucially, its GeoTIFFs
 are georeferenced, allowing for pixel-wise alignment with AEF embeddings.
-
 
 \textbf{AlphaEarth Foundations (AEF)} \cite{brown} provides annual, global, $10$ m
 satellite embeddings: unit-length 64-dimensional vectors summarizing
@@ -128,24 +123,28 @@ Milestone 3, equation 2. Continuous predictors are standardized, while categoric
 their encoded values. Finally, the 40 environmental and 64 embedding channels are concatenated to form the 104-channel model 
 input.
 
-\subsection{Models and Baselines}
-{\color{red}[Explain each model--\textbf{config level not architecture details}--and clearly justfy the use of our given baselines and specify 
-exactly what we \textbf{can} and \textbf{cannot} infer from each ablation]}
+\subsection{Ablation Experiment}
+Feature and architectural contributions are evaluated using ablations. For the feature ablation, the proposed 
+multi-attention U-Net is trained with either the 40-channel WSTS predictors alone or the 104-channel WSTS+AEF input. 
+Comparing these variants isolates the contribution of AEF embeddings while holding the architecture constant.
+For architectural ablation, four variants are evaluated on the 104-channel WSTS+AEF input: a conventional U-Net (no attention), 
+a spatial-attention U-Net, a channel-attention U-Net, and the combined multi-attention U-Net. These comparisons assess the 
+individual and combined contributions of spatial and channel attention for processing the augmented feature stack.
 
 \subsection{Experimental Setup}
-All experiments use seed 0, $128\times128$ crops, AdamW with learning rate $10^{-3}$,
-batch size 8, a 0.5 inference threshold, and an equally weighted BCE--Dice loss.
-Training is capped at 30 epochs with early stopping after five epochs without validation-IoU improvement.
-IoU is the model-selection metric; Dice/F1, precision, and recall are also reported.
+Experiments use all valid consecutive-day pairs from 160 selected fire events (40 per year). Three year-based development folds 
+are used: 2018--2019 training with 2020 validation; 2018 and 2020 training with 2019 validation; and 
+2019--2020 training with 2018 validation. The 2021 events are reserved as a held-out test set and 
+consequently excluded from development and model selection.
 
-AEF extraction was compute-constrained. The Earth Engine Community-tier quota was exhausted after
-approximately 34 fire events; after upgrading to the Contributor tier, extraction of the fixed 160-fire
-subset consumed approximately 1.83 million EECU-seconds (50.8\% of the 3.6 million monthly allowance).
-Accordingly, all experiments use the same 40 fires per year to preserve fair comparisons within the
-available compute budget.
+All models use the same training procedure: AdamW optimization with a learning rate of $10^{-3}$, batch size 8, and a maximum of 
+30 epochs. Training uses random $128\times128$ crops, with early stopping after five epochs without validation improvement. 
+The hybrid loss combines binary cross-entropy and Dice loss with equal weighting by equation 14 from Milestone 3.
 
-Development uses 2018--2020 in three year-based folds, with two years for training and one for validation.
-The complete 2021 subset remains held out until model and attention configurations are finalized.
+Randomness is controlled across Python, NumPy, PyTorch, and CUDA. Performance is evaluated using the following metrics computed 
+over valid pixels at a 0.5 threshold; IoU: overlap between predicted and true fire regions. Dice: region overlap giving more 
+weight to true positives. Precision: fraction of predicted fire pixels that are correct. Precision: fraction of predicted fire 
+pixels that are correct. F1: harmonic mean of precision and recall.
 
 \section{Results}
 Table~\ref{tab:results} reports mean $\pm$ standard deviation across the three year-based
