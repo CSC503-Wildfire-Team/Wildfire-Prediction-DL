@@ -133,16 +133,90 @@ input.
 exactly what we \textbf{can} and \textbf{cannot} infer from each ablation]}
 
 \subsection{Experimental Setup}
-{\color{red} [Specify all training configs and randomness control--reader should be able to replicate. Explain each metric and loss 
-(don't worry about justify the loss function, I did that in M3).]}
+All experiments use seed 0, $128\times128$ crops, AdamW with learning rate $10^{-3}$,
+batch size 8, a 0.5 inference threshold, and an equally weighted BCE--Dice loss.
+Training is capped at 30 epochs with early stopping after five epochs without validation-IoU improvement.
+IoU is the model-selection metric; Dice/F1, precision, and recall are also reported.
+
+AEF extraction was compute-constrained. The Earth Engine Community-tier quota was exhausted after
+approximately 34 fire events; after upgrading to the Contributor tier, extraction of the fixed 160-fire
+subset consumed approximately 1.83 million EECU-seconds (50.8\% of the 3.6 million monthly allowance).
+Accordingly, all experiments use the same 40 fires per year to preserve fair comparisons within the
+available compute budget.
+
+Development uses 2018--2020 in three year-based folds, with two years for training and one for validation.
+The complete 2021 subset remains held out until model and attention configurations are finalized.
 
 \section{Results}
-{\color{red}[PRESENT/REPORT DON'T ATTRIBUTE OR DISCUSS. Add a nice looking table.]}
+Table~\ref{tab:results} reports mean $\pm$ standard deviation across the three year-based
+fold-trained models. RQ1 uses the untouched 2021 final test set, whereas RQ2 reports development
+cross-validation used for attention selection.
+
+\begin{table}[t]
+\centering
+\caption{RQ1 final-test and RQ2 development-CV results.}
+\label{tab:results}
+\scriptsize
+\setlength{\tabcolsep}{2.1pt}
+\begin{tabular}{lcccc}
+\toprule
+\multicolumn{5}{l}{\textit{RQ1: held-out 2021 test}}\\
+Model & IoU & Dice/F1 & Prec. & Recall \\
+\midrule
+WSTS 40ch &
+$0.2315{\pm}0.0028$ &
+$0.3760{\pm}0.0037$ &
+$\mathbf{0.3461}{\pm}0.0163$ &
+$0.4133{\pm}0.0189$ \\
+ResNet18 40ch &
+$0.2274{\pm}0.0062$ &
+$0.3705{\pm}0.0082$ &
+$0.3321{\pm}0.0169$ &
+$0.4200{\pm}0.0081$ \\
+Proposed 104ch &
+$\mathbf{0.2347}{\pm}0.0036$ &
+$\mathbf{0.3801}{\pm}0.0047$ &
+$0.3382{\pm}0.0202$ &
+$\mathbf{0.4371}{\pm}0.0241$ \\
+\midrule
+\multicolumn{5}{l}{\textit{RQ2: development CV (IoU)}}\\
+No attention &
+$0.2119{\pm}0.0324$ & & & \\
+Spatial only &
+$0.2177{\pm}0.0344$ & & & \\
+Channel only &
+$0.2172{\pm}0.0376$ & & & \\
+Spatial + Channel &
+$\mathbf{0.2219}{\pm}0.0318$ & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{RQ1: Contribution of AEF Embeddings}
+On the untouched 2021 test set, the proposed 104-channel WSTS+AEF model achieved the highest mean
+IoU ($0.2347$) and Dice/F1 ($0.3801$). Relative to the otherwise matched 40-channel WSTS control,
+AEF augmentation increased IoU by $0.0032$ (1.38\%) and Dice/F1 by $0.0041$ (1.09\%).
+Recall increased from $0.4133$ to $0.4371$, while precision decreased from $0.3461$ to $0.3382$.
+The proposed model also exceeded the ResNet18 baseline by $0.0073$ IoU and $0.0096$ Dice/F1.
+
 \subsection{RQ2: Contribution of Attention Mechanisms}
+The four attention configurations were compared using development cross-validation before the final
+test set was accessed. Combined spatial and channel attention obtained the highest mean validation IoU
+($0.2219$), followed by spatial-only ($0.2177$), channel-only ($0.2172$), and no attention ($0.2119$).
+The combined configuration was therefore fixed before evaluation on the held-out 2021 test set.
 
 \section{Discussion}
-{\color{red}[Discuss results and draw conclusions.]}
+For RQ1, the results provide evidence that AEF embeddings add useful but modest predictive information.
+The WSTS-only control is the cleanest feature ablation because it retains the same multi-attention
+architecture and training protocol while removing only the 64 AEF channels. Its comparison with the
+proposed model therefore attributes the observed $0.0032$ IoU and $0.0041$ Dice/F1 gains to the
+additional embedding features under the evaluated setting. The larger recall increase ($+0.0238$),
+accompanied by a small precision decrease ($-0.0079$), indicates that the AEF-augmented model identifies
+more true next-day fire pixels at the cost of additional false positives. Since the gains are modest and
+the experiments are restricted to a fixed 160-fire subset and one random seed, they should not be
+interpreted as evidence of a large or statistically significant improvement.
+
+{\color{red}[RQ2 attribution and discussion to be completed.]}
 
 
 \bibliographystyle{ACM-Reference-Format}
