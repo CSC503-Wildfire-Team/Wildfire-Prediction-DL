@@ -98,48 +98,41 @@ Squeeze-Excitation-based channel attention \cite{SE2017} U-Net, and a multi-atte
 comparisons are made against the WildfireSpreadTS benchmark models \cite{gerard2023wildfirespreadts}.
 
 
-\section{Methodology \& Experimental Design}
+\section{Methodology}
 {\color{red} [Explain why and how ablating isolates feature predictive power. 
 Explain why baselines are used and justify each one.
 EXPLAIN AND JUSTIFY THE FOLLOWING:]}
 \subsection{Dataset}
-\textbf{WildfireSpreadTS.} All models are trained and evaluated on WildfireSpreadTS
-(WSTS)~\cite{gerard2023wildfirespreadts}. WSTS was selected for five reasons. (i) \emph{Relevance:} its
-central task is exactly the one studied here, predicting the next day's binarized VIIRS active-fire map
-from the observations available on the current day. (ii) \emph{Label availability:} every daily image
-carries the active-fire band from which the next-day ground-truth mask is derived, so no additional
-labelling is required. (iii) \emph{Comparability:} WSTS ships published benchmark models and a
-year-based cross-validation protocol, so our models can be placed alongside existing results rather than
-evaluated in isolation. (iv) \emph{Accessibility:} the data are openly available on Zenodo under
-CC-BY-4.0 and the loader code under MIT, so the experiments can be reproduced by others.
-(v) \emph{Georeferencing:} each fire event is delivered as GeoTIFFs with a coordinate reference system
-and affine transform, which is a precondition for this study, since the AEF embeddings must be aligned
-pixel-for-pixel with the WSTS grid.
+\textbf{WildfireSpreadTS (WSTS)} \cite{gerard2023wildfirespreadts} was selected due to its 
+task relevance, public availability, and published benchmark models. WSTS is a dataset of
+$13,607$ daily images across 607 fire events ($>1,000$ ha) in the western United
+States from January 2018 to October 2021. Each image covers a $1^\circ\times
+1^\circ$ area around a fire at $375$ m resolution and contains $23$ channels
+representing satellite reflectance and vegetation indices, weather, topography,
+land cover, and active-fire detections. The prediction target is the following
+day's binarized VIIRS (Visible Infrared Imaging Radiometer) active-fire map. Crucially, its GeoTIFFs
+are georeferenced, allowing for pixel-wise alignment with AEF embeddings.
 
-The full dataset contains 13,607 daily images across 607 fire events larger than 1,000\,ha in the
-western United States from January 2018 to October 2021, each covering a $1^\circ\times1^\circ$ area
-around the fire at 375\,m resolution~\cite{gerard2023wildfirespreadts}. Each image has 23 channels:
-VIIRS reflectance (M11, I2, I1), NDVI and EVI2, GRIDMET weather (precipitation, wind speed and
-direction, minimum and maximum temperature, specific humidity, energy release component, PDSI), GFS
-weather forecasts, topography (slope, aspect, elevation), MODIS land cover, and the active-fire
-band~\cite{gerard2023wildfirespreadts}.
 
-\textbf{AlphaEarth Foundations embeddings.} The embedding features are taken from the AlphaEarth
-Foundations Satellite Embedding dataset~\cite{brown}, distributed through Google Earth Engine. It was
-chosen because it is, to our knowledge, the only openly released annual, global, 10\,m geospatial
-foundation-model product: every pixel is a unit-length 64-dimensional vector summarising a year of
-multi-sensor observations, with Landsat, Sentinel-1 and Sentinel-2 among the inputs~\cite{brown}.
+\textbf{AlphaEarth Foundations (AEF)} \cite{brown} provides annual, global, $10$ m
+satellite embeddings: unit-length 64-dimensional vectors summarizing
+multi-sensor environmental observations at each pixel \cite{brown}. It is hypothesized these embeddings augment
+WSTS's conventional environmental predictors with learned environmental context.
 
-Ingesting AEF at 10\,m for all 607 events exceeded the Earth Engine compute quota available to the
-project, so all experiments use a fixed subset of 40 fire events per year (160 events), taken as the
-first 40 events of each year in WSTS event-ID order. The subset was fixed before any model was trained
-and is shared by every model and fold, so all comparisons use identical fires and day pairs.
-\subsection{Preprocessing and Data Splits}
-{\color{red}[Describe and justify our preprocessing citing \cite{gerard2023wildfirespreadts}, \cite{brown} and my medoid algorithm from M3.]}
+\subsection{Preprocessing}
+WSTS inputs are processed using the dataset's published preprocessing pipeline, yielding 40 feature channels from the 
+original 23-channel dataset \cite{gerard2023wildfirespreadts}. The AEF embeddings and WSTS events are 
+georectified and the annual embeddings from year $y - 1$ are used for a fire occurring in year $y$ to prevent data leakage.     
+Valid 10-m embedding vectors within each 375-m cell are aggregated using the exact cosine medoid defined in
+Milestone 3, equation 2. Continuous predictors are standardized, while categorical land-cover and active-fire channels retain 
+their encoded values. Finally, the 40 environmental and 64 embedding channels are concatenated to form the 104-channel model 
+input.
+
 \subsection{Models and Baselines}
 {\color{red}[Explain each model--\textbf{config level not architecture details}--and clearly justfy the use of our given baselines and specify 
 exactly what we \textbf{can} and \textbf{cannot} infer from each ablation]}
-\subsection{Training and Evaluation Metrics}
+
+\subsection{Experimental Setup}
 {\color{red} [Specify all training configs and randomness control--reader should be able to replicate. Explain each metric and loss 
 (don't worry about justify the loss function, I did that in M3).]}
 
